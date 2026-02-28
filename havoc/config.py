@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     dobot_host: str = "192.168.1.6"
     dobot_port: int = 29999
 
-    camera_type: str = "zed"  # "zed" | "opencv" | "websocket"
+    camera_type: str = "opencv"  # "opencv" | "zed" | "websocket"
     camera_ws_url: str = ""
     camera_device_id: int = 0
     camera_width: int = 1280

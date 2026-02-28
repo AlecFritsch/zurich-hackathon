@@ -77,7 +77,6 @@ class AppState:
         self.policy_store = None
         self.adapter = None
         self.camera = None
-        self.supervisor = None
         self.connection_manager = ConnectionManager()
         self.part_counter: int = 0
         self.parsed_documents: dict[str, Any] = {}

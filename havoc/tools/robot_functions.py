@@ -15,14 +15,12 @@ logger = logging.getLogger(__name__)
 
 # Will be set by main.py during startup
 _adapter = None
-_broadcast_fn = None
 
 
 def set_robot_backend(adapter, broadcast_fn=None):
     """Called during app startup to inject the robot adapter."""
-    global _adapter, _broadcast_fn
+    global _adapter
     _adapter = adapter
-    _broadcast_fn = broadcast_fn
 
 
 # ---------------------------------------------------------------------------
