@@ -11,7 +11,7 @@ CHECKERBOARD = (5, 4)
 # The exact physical size of ONE square on your printed board in meters.
 # Example: 25mm = 0.025
 SQUARE_SIZE_METERS = 0.025 
-
+ 
 # Your working camera index
 CAMERA_INDEX = 4 
 
