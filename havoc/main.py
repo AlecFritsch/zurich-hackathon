@@ -18,7 +18,6 @@ from fastapi.responses import StreamingResponse
 
 from config import settings
 from models import (
-    Decision,
     DocumentUploadResponse,
     EventType,
     ExecutablePolicy,
@@ -27,7 +26,6 @@ from models import (
     InspectionResult,
     OperatorOverrideRequest,
     PolicyApprovalRequest,
-    PolicyStatus,
     QARequest,
     QAResponse,
     WSEvent,
@@ -118,6 +116,7 @@ async def lifespan(app: FastAPI):
         dobot_host=settings.dobot_host,
         dobot_port=settings.dobot_port,
         simulator=sim,
+        speed_pct=settings.max_speed_pct,
     )
     from tools.robot_functions import set_robot_backend
     set_robot_backend(state.adapter, state.connection_manager.broadcast)
@@ -213,6 +212,16 @@ async def camera_snapshot():
     if not b64:
         raise HTTPException(503, "Failed to capture frame")
     return {"image_base64": b64}
+
+
+@app.post("/camera/ocr")
+async def camera_ocr(prompt: str | None = None):
+    """Capture frame, undistort, run Gemini OCR. Returns detected parts and text. Optional ?prompt= for custom prompt."""
+    if not state.camera or not state.camera.is_open():
+        raise HTTPException(503, "Camera not available")
+    from tools.vision_tools import run_ocr
+    result = await run_ocr(state.camera, prompt)
+    return result
 
 
 # ---------------------------------------------------------------------------
@@ -566,7 +575,14 @@ async def operator_qa(req: QARequest):
             {"messages": [{"role": "user", "content": req.question}]},
         )
 
-        answer = result["messages"][-1].content if result.get("messages") else "No answer available"
+        raw = result["messages"][-1].content if result.get("messages") else "No answer available"
+        if isinstance(raw, list):
+            answer = " ".join(
+                block.get("text", "") if isinstance(block, dict) else str(block)
+                for block in raw
+            ).strip() or "No answer available"
+        else:
+            answer = str(raw)
         return QAResponse(answer=answer)
     except Exception as e:
         logger.error("Q&A failed: %s", e)
@@ -641,10 +657,13 @@ async def get_stats():
 
 @app.get("/status")
 async def system_status():
+    from tools.vision_tools import load_calibration
+    mtx, _ = load_calibration()
     return {
         "status": state.system_status,
         "camera": state.camera.is_open() if state.camera else False,
         "camera_backend": state.camera._backend if state.camera else "none",
+        "calibration_loaded": mtx is not None,
         "orchestrator_model": settings.gemini_orchestrator_model,
         "active_policy": state.policy_store.active_policy.policy_id if state.policy_store and state.policy_store.active_policy else None,
         "part_counter": state.part_counter,

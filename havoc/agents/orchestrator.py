@@ -24,8 +24,6 @@ from models import (
 
 logger = logging.getLogger(__name__)
 
-ROBOTICS_MODEL = "gemini-robotics-er-1.5-preview"
-
 # ---------------------------------------------------------------------------
 # Function Declarations for Gemini Function Calling
 # ---------------------------------------------------------------------------

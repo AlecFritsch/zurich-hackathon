@@ -39,7 +39,8 @@ async def robot_move_to(x: float, y: float, z: float) -> dict[str, Any]:
 
     if _adapter:
         try:
-            await _adapter.move(x, y, z)
+            pos_str = f"{x},{y},{z},0,0,0"
+            await _adapter.move(pos_str)
             return {"success": True, "position": [x, y, z]}
         except Exception as e:
             logger.error("Robot move failed: %s", e)
