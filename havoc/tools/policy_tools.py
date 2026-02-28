@@ -4,71 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any
 
 from langchain_core.tools import tool
 
-from models import (
-    Decision,
-    DefectInspection,
-    ExecutablePolicy,
-    PartClassification,
-    PolicyValidation,
-)
-from tools.rule_engine import evaluate_condition
+from models import ExecutablePolicy, PolicyValidation
 
 logger = logging.getLogger(__name__)
-
-
-# ---------------------------------------------------------------------------
-# Policy Evaluation (direct pipeline — no LLM needed)
-# ---------------------------------------------------------------------------
-
-def evaluate_policy(
-    classification: PartClassification,
-    defects: DefectInspection,
-    policy: ExecutablePolicy,
-) -> Decision:
-    """Evaluate classification + defects against policy rules. Returns a Decision."""
-
-    context: dict[str, Any] = {
-        "color": classification.color,
-        "color_hex": classification.color_hex,
-        "size_mm": classification.size_mm,
-        "size_category": classification.size_category,
-        "part_type": classification.part_type,
-        "shape": classification.shape,
-        "confidence": classification.confidence,
-        "defect_detected": defects.defect_detected,
-        "surface_quality": defects.surface_quality,
-        "defect_count": len(defects.defects),
-    }
-
-    sorted_rules = sorted(policy.decision_rules, key=lambda r: r.priority)
-
-    for rule in sorted_rules:
-        try:
-            if evaluate_condition(rule.condition, context):
-                return Decision(
-                    target_bin=rule.target_bin,
-                    action=rule.action,
-                    rule_id=rule.id,
-                    rule_condition=rule.condition,
-                    source=rule.source,
-                    confidence=classification.confidence,
-                )
-        except Exception as e:
-            logger.warning("Rule %s evaluation failed: %s", rule.id, e)
-            continue
-
-    return Decision(
-        target_bin=policy.default_action.target_bin,
-        action=policy.default_action.action,
-        rule_id="DEFAULT",
-        rule_condition="no_rule_matched",
-        confidence=classification.confidence,
-    )
-
 
 
 # ---------------------------------------------------------------------------
@@ -98,7 +39,6 @@ def validate_policy(policy: ExecutablePolicy) -> PolicyValidation:
     if not policy.inspection_criteria:
         missing.append("no_inspection_criteria")
 
-    bins = {r.target_bin for r in policy.decision_rules}
     rule_count = len(policy.decision_rules)
     coverage = min(rule_count / 5.0, 1.0)
 

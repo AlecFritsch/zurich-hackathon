@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import io
 import json
 import logging
 import threading
 import time
+from pathlib import Path
 from typing import Any
 
 import cv2
@@ -16,7 +16,7 @@ import numpy as np
 from PIL import Image
 
 from config import settings
-from models import DefectInspection, PartClassification
+from pydantic import BaseModel
 
 logger = logging.getLogger(__name__)
 
@@ -239,12 +239,14 @@ class Camera:
         frame = self._grab_frame()
         if frame is None:
             return None
+        frame = undistort_frame(frame)
         return Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     def capture_base64(self) -> str | None:
         frame = self._grab_frame()
         if frame is None:
             return None
+        frame = undistort_frame(frame)
         _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
         return base64.b64encode(buffer).decode("utf-8")
 
@@ -255,6 +257,7 @@ class Camera:
             if frame is None:
                 time.sleep(0.05)
                 continue
+            frame = undistort_frame(frame)
             _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
             yield (
                 b"--frame\r\n"
@@ -276,70 +279,92 @@ class Camera:
         self._backend = "none"
 
 
-def image_to_base64(img: Image.Image) -> str:
-    buf = io.BytesIO()
-    img.save(buf, format="JPEG", quality=85)
-    return base64.b64encode(buf.getvalue()).decode("utf-8")
-
-
 # ---------------------------------------------------------------------------
-# Gemini Vision — Structured Output
+# Calibration & OCR
 # ---------------------------------------------------------------------------
 
-async def gemini_classify(image: Image.Image, prompt: str) -> PartClassification:
-    """Classify a part using Gemini Vision with structured JSON output."""
-    from google import genai
+_calib_mtx = None
+_calib_dist = None
+
+
+def load_calibration(path: str | None = None) -> tuple[np.ndarray | None, np.ndarray | None]:
+    """Load camera matrix and distortion from .npz or camera_calibration.json."""
+    global _calib_mtx, _calib_dist
+    if _calib_mtx is not None:
+        return _calib_mtx, _calib_dist
+    p = path or settings.calibration_path
+    if not p:
+        for name in ("usb_camera_intrinsics.npz", "camera_calibration.json"):
+            for base in (Path.cwd(), Path(__file__).resolve().parent.parent.parent):
+                fp = base / name
+                if fp.exists():
+                    p = str(fp)
+                    break
+        if not p:
+            return None, None
+    fp = Path(p)
+    if not fp.exists():
+        return None, None
+    try:
+        if fp.suffix == ".npz":
+            data = np.load(fp)
+            _calib_mtx, _calib_dist = data["mtx"], data["dist"]
+        else:
+            with open(fp, encoding="utf-8") as f:
+                data = json.load(f)
+            _calib_mtx = np.array(data["camera_matrix"])
+            d = data.get("distortion_coefficients", data.get("distortion", []))
+            _calib_dist = np.array(d) if isinstance(d, list) else np.array(d)
+        logger.info("Calibration loaded from %s", fp)
+        return _calib_mtx, _calib_dist
+    except Exception as e:
+        logger.warning("Calibration load failed: %s", e)
+        return None, None
+
+
+def undistort_frame(frame: np.ndarray) -> np.ndarray:
+    """Apply calibration to remove lens distortion."""
+    mtx, dist = load_calibration()
+    if mtx is None or dist is None:
+        return frame
+    return cv2.undistort(frame, mtx, dist, None, mtx)
+
+
+class _PartInfo(BaseModel):
+    part_type: str
+    detected_text: str
+
+
+class _ImageAnalysis(BaseModel):
+    parts: list[_PartInfo]
+
+
+async def run_ocr(camera: "Camera", prompt: str | None = None) -> dict[str, Any]:
+    """Capture frame, undistort, run Gemini OCR. Returns {parts: [{part_type, detected_text}]}."""
+    from google.genai import types
+
+    frame = camera._grab_frame() if hasattr(camera, "_grab_frame") else None
+    if frame is None:
+        return {"parts": [], "error": "No frame"}
+
+    frame = undistort_frame(frame)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    pil_img = Image.fromarray(rgb)
 
     client = _get_client()
-
-    full_prompt = (
-        f"{prompt}\n\n"
-        "Return a JSON object with these exact fields:\n"
-        '{"color": "red|blue|green|yellow|other", "color_hex": "#RRGGBB", '
-        '"size_mm": <float>, "size_category": "small|medium|large", '
-        '"part_type": "<string>", "shape": "round|square|irregular", '
-        '"confidence": <0.0-1.0>}'
-    )
-
+    prompt = prompt or "Identify objects, parts, components. Extract all visible text, serial numbers, labels."
     try:
         response = client.models.generate_content(
-            model=settings.gemini_model,
-            contents=[full_prompt, image],
-            config=genai.types.GenerateContentConfig(
+            model=settings.gemini_vision_model,
+            contents=[pil_img, prompt],
+            config=types.GenerateContentConfig(
                 response_mime_type="application/json",
+                response_schema=_ImageAnalysis,
+                temperature=0.0,
             ),
         )
         data = json.loads(response.text)
-        return PartClassification(**data)
+        return {"parts": [{"part_type": p["part_type"], "detected_text": p["detected_text"]} for p in data.get("parts", [])]}
     except Exception as e:
-        logger.error("Vision classify failed: %s", e)
-        return PartClassification(confidence=0.0)
-
-
-async def gemini_inspect_defects(image: Image.Image, prompt: str) -> DefectInspection:
-    """Inspect for defects using Gemini Vision with structured JSON output."""
-    from google import genai
-
-    client = _get_client()
-
-    full_prompt = (
-        f"{prompt}\n\n"
-        "Return a JSON object with these exact fields:\n"
-        '{"defect_detected": <bool>, "defects": [{"type": "crack|scratch|discoloration|dent|chip|contamination", '
-        '"severity": "minor|major|critical", "location": "<string>", "confidence": <0.0-1.0>}], '
-        '"surface_quality": "perfect|acceptable|poor|reject", "overall_confidence": <0.0-1.0>}'
-    )
-
-    try:
-        response = client.models.generate_content(
-            model=settings.gemini_model,
-            contents=[full_prompt, image],
-            config=genai.types.GenerateContentConfig(
-                response_mime_type="application/json",
-            ),
-        )
-        data = json.loads(response.text)
-        return DefectInspection(**data)
-    except Exception as e:
-        logger.error("Vision defect inspect failed: %s", e)
-        return DefectInspection(overall_confidence=0.0)
+        logger.error("OCR failed: %s", e)
+        return {"parts": [], "error": str(e)}

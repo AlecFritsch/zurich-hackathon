@@ -59,17 +59,25 @@ Document (PDF/DOCX/Image)
 | Backend | Python + FastAPI |
 | Multi-Agent | LangChain + LangGraph |
 | Document AI | Docling (local) |
-| LLM | Gemini 2.5 Pro |
+| LLM | Gemini 3.1 Pro Preview (Policy, Q&A) + Gemini Robotics-ER 1.5 (Inspection, Robot) |
 | Vision | OpenCV + Gemini Vision |
 | Robot | Dobot CR (TCP/IP) + Simulator |
 | Frontend | Next.js + Tailwind |
 | Database | SQLite (WAL mode) |
 | Real-time | WebSocket |
 
-## API Keys
+## Camera OCR & Calibration
+
+- **POST /camera/ocr** — Capture frame, undistort (if calibrated), run Gemini 3.1 Pro Preview OCR. Returns `{parts: [{part_type, detected_text}]}`.
+- **Camera**: Default `opencv` (USB via `CAMERA_DEVICE_ID`). Options: `opencv` | `zed` | `websocket`.
+- **Calibration**: Run `calibration.py` (root) on your camera to produce `usb_camera_intrinsics.npz`. Place in project root. Undistortion applies once calibration data is available.
+
+## API Keys & Model
 
 ```env
 GOOGLE_API_KEY=your-gemini-api-key
 ```
+
+Default models: **gemini-3.1-pro-preview** (Policy, OCR, Q&A) | **gemini-robotics-er-1.5-preview** (Inspection, Robot). Override via `GEMINI_MODEL`, `GEMINI_ORCHESTRATOR_MODEL`, `GEMINI_VISION_MODEL` in `.env`.
 
 That's it. Everything else is local.

@@ -72,7 +72,7 @@ class DefectInspection(BaseModel):
 
 class VisionPrompt(BaseModel):
     prompt: str
-    model: str = "gemini-2.5-pro"
+    model: str = "gemini-3.1-pro-preview"
     mode: Literal["classify", "defect", "verify"] = "classify"
 
 

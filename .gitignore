@@ -12,6 +12,8 @@ build/
 .venv/
 venv/
 events.db
+events.db-shm
+events.db-wal
 
 # Node
 node_modules/

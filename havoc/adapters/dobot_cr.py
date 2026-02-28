@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import socket
 
@@ -19,7 +18,6 @@ DEFAULT_BIN_POSITIONS: dict[str, str] = {
 }
 
 PICK_POSITION = "250,0,0,0,0,0"
-SAFE_HEIGHT_Z = 100
 
 
 class DobotCRAdapter(RobotAdapter):

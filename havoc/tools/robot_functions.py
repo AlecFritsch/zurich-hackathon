@@ -15,14 +15,12 @@ logger = logging.getLogger(__name__)
 
 # Will be set by main.py during startup
 _adapter = None
-_broadcast_fn = None
 
 
 def set_robot_backend(adapter, broadcast_fn=None):
     """Called during app startup to inject the robot adapter."""
-    global _adapter, _broadcast_fn
+    global _adapter
     _adapter = adapter
-    _broadcast_fn = broadcast_fn
 
 
 # ---------------------------------------------------------------------------
@@ -39,7 +37,8 @@ async def robot_move_to(x: float, y: float, z: float) -> dict[str, Any]:
 
     if _adapter:
         try:
-            await _adapter.move(x, y, z)
+            pos_str = f"{x},{y},{z},0,0,0"
+            await _adapter.move(pos_str)
             return {"success": True, "position": [x, y, z]}
         except Exception as e:
             logger.error("Robot move failed: %s", e)

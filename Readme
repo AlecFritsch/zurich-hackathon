@@ -1,0 +1,2 @@
+pip install opencv-python pillow google-genai pydantic spicy
+

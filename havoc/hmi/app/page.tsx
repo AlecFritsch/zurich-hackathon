@@ -199,7 +199,7 @@ export default function Dashboard() {
         </div>
 
         <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <div className="p-4 h-[360px] shrink-0">
+          <div className="p-4 border-b" style={{ borderColor: "var(--color-border)" }}>
             <FactoryFloor
               bins={bins}
               totalInspected={stats.total}

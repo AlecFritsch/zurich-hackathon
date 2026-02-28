@@ -1,7 +1,5 @@
 "use client";
 
-import { useEffect, useRef } from "react";
-
 interface BinData {
   id: string;
   count: number;
@@ -16,16 +14,12 @@ interface FactoryFloorProps {
   lastAnimation?: { target?: string; part_color?: string } | null;
 }
 
-const BIN_POSITIONS: Record<string, { x: number; y: number }> = {
-  BIN_A: { x: 0.75, y: 0.15 },
-  BIN_B: { x: 0.75, y: 0.35 },
-  BIN_C: { x: 0.75, y: 0.55 },
-  REJECT_BIN: { x: 0.75, y: 0.78 },
-  REVIEW_BIN: { x: 0.90, y: 0.46 },
+const BIN_META: Record<string, { label: string; accent: string }> = {
+  BIN_A: { label: "A", accent: "var(--color-accent-red)" },
+  BIN_B: { label: "B", accent: "var(--color-accent-blue)" },
+  BIN_C: { label: "C", accent: "var(--color-accent-green)" },
+  REJECT_BIN: { label: "REJ", accent: "var(--color-accent-red)" },
 };
-
-const CAMERA_POS = { x: 0.12, y: 0.46 };
-const INSPECT_POS = { x: 0.42, y: 0.46 };
 
 export default function FactoryFloor({
   bins,
@@ -34,159 +28,124 @@ export default function FactoryFloor({
   avgConfidence,
   lastAnimation,
 }: FactoryFloorProps) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const particlesRef = useRef<
-    Array<{ x: number; y: number; tx: number; ty: number; color: string; progress: number }>
-  >([]);
-
-  useEffect(() => {
-    if (lastAnimation?.target) {
-      const binPos = BIN_POSITIONS[lastAnimation.target] || BIN_POSITIONS.REVIEW_BIN;
-      particlesRef.current.push({
-        x: INSPECT_POS.x,
-        y: INSPECT_POS.y,
-        tx: binPos.x,
-        ty: binPos.y,
-        color: lastAnimation.part_color || "#FAFAFA",
-        progress: 0,
-      });
-    }
-  }, [lastAnimation]);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    let animId: number;
-
-    const draw = () => {
-      const w = canvas.width;
-      const h = canvas.height;
-
-      ctx.fillStyle = "#0A0A0A";
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = "#1A1A1A";
-      ctx.lineWidth = 1;
-      ctx.setLineDash([3, 6]);
-
-      ctx.beginPath();
-      ctx.moveTo(CAMERA_POS.x * w, CAMERA_POS.y * h);
-      ctx.lineTo(INSPECT_POS.x * w, INSPECT_POS.y * h);
-      ctx.stroke();
-
-      for (const [, pos] of Object.entries(BIN_POSITIONS)) {
-        ctx.beginPath();
-        ctx.moveTo(INSPECT_POS.x * w, INSPECT_POS.y * h);
-        ctx.lineTo(pos.x * w, pos.y * h);
-        ctx.stroke();
-      }
-      ctx.setLineDash([]);
-
-      ctx.font = "9px 'JetBrains Mono', monospace";
-      ctx.textAlign = "center";
-
-      drawNode(ctx, CAMERA_POS.x * w, CAMERA_POS.y * h, "CAM", "#666666", 28);
-      drawNode(ctx, INSPECT_POS.x * w, INSPECT_POS.y * h, "INSPECT", "#666666", 36);
-
-      for (const binData of bins) {
-        const pos = BIN_POSITIONS[binData.id];
-        if (!pos) continue;
-        const bx = pos.x * w;
-        const by = pos.y * h;
-        const isReject = binData.id === "REJECT_BIN";
-        const borderColor = isReject ? "#FF3333" : "#2A2A2A";
-
-        ctx.strokeStyle = borderColor;
-        ctx.lineWidth = isReject ? 2 : 1;
-        ctx.strokeRect(bx - 30, by - 18, 60, 36);
-
-        ctx.fillStyle = isReject ? "#FF3333" : "#FAFAFA";
-        ctx.font = "bold 10px 'JetBrains Mono', monospace";
-        ctx.fillText(binData.id.replace("_BIN", "").replace("REJECT", "REJ"), bx, by - 2);
-
-        ctx.font = "9px 'JetBrains Mono', monospace";
-        ctx.fillStyle = "#666666";
-        ctx.fillText(binData.count.toString(), bx, by + 12);
-      }
-
-      const alive: typeof particlesRef.current = [];
-      for (const p of particlesRef.current) {
-        p.progress += 0.015;
-        if (p.progress >= 1) continue;
-        alive.push(p);
-
-        const t = p.progress;
-        const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-        const cx = p.x + (p.tx - p.x) * ease;
-        const cy = p.y + (p.ty - p.y) * ease;
-
-        ctx.beginPath();
-        ctx.arc(cx * w, cy * h, 6, 0, Math.PI * 2);
-        ctx.fillStyle = p.color;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(cx * w, cy * h, 10, 0, Math.PI * 2);
-        ctx.strokeStyle = p.color;
-        ctx.globalAlpha = 1 - t;
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      }
-      particlesRef.current = alive;
-
-      animId = requestAnimationFrame(draw);
-    };
-
-    const resize = () => {
-      canvas.width = canvas.offsetWidth * (window.devicePixelRatio || 1);
-      canvas.height = canvas.offsetHeight * (window.devicePixelRatio || 1);
-      ctx.scale(window.devicePixelRatio || 1, window.devicePixelRatio || 1);
-    };
-    resize();
-    window.addEventListener("resize", resize);
-    draw();
-
-    return () => {
-      cancelAnimationFrame(animId);
-      window.removeEventListener("resize", resize);
-    };
-  }, [bins]);
+  const activeBin = lastAnimation?.target;
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="text-[10px] uppercase tracking-widest mb-2" style={{ color: "var(--color-text-muted)" }}>
-        Factory Floor
+    <div className="flex flex-col gap-4 h-full">
+      <div className="flex items-center justify-between">
+        <span
+          className="text-[10px] uppercase tracking-widest"
+          style={{ color: "var(--color-text-muted)" }}
+        >
+          Pipeline
+        </span>
+        <span
+          className="text-[10px] uppercase tracking-widest tabular-nums"
+          style={{ color: totalInspected > 0 ? "var(--color-accent-green)" : "var(--color-text-muted)" }}
+        >
+          {totalInspected > 0 ? "ACTIVE" : "IDLE"}
+        </span>
       </div>
-      <div className="border flex-1 min-h-[200px]" style={{ borderColor: "var(--color-border)" }}>
-        <canvas ref={canvasRef} className="w-full h-full" />
+
+      <div className="flex items-stretch gap-2 flex-1 min-h-0">
+        <FlowNode label="CAM" sub="ZED 2i" />
+        <Arrow />
+        <FlowNode label="INSPECT" sub="Gemini ER" highlight />
+        <Arrow />
+
+        <div className="flex flex-col gap-1.5 flex-1 min-w-0">
+          {bins.map((bin) => {
+            const meta = BIN_META[bin.id] || { label: bin.id, accent: "var(--color-text-muted)" };
+            const isActive = activeBin === bin.id;
+            const isReject = bin.id === "REJECT_BIN";
+
+            return (
+              <div
+                key={bin.id}
+                className="flex items-center gap-2 border px-2.5 py-1.5 transition-all duration-300"
+                style={{
+                  borderColor: isActive ? meta.accent : "var(--color-border)",
+                  background: isActive ? `${meta.accent}08` : "transparent",
+                }}
+              >
+                <div
+                  className="w-1.5 h-1.5 shrink-0"
+                  style={{ background: meta.accent }}
+                />
+                <span
+                  className="text-[10px] font-bold uppercase tracking-wider flex-1"
+                  style={{ color: isReject ? meta.accent : "var(--color-text)" }}
+                >
+                  {meta.label}
+                </span>
+                <span
+                  className="text-xs font-bold tabular-nums"
+                  style={{ color: bin.count > 0 ? "var(--color-text)" : "var(--color-text-muted)" }}
+                >
+                  {bin.count}
+                </span>
+              </div>
+            );
+          })}
+        </div>
       </div>
-      <div className="grid grid-cols-3 gap-4 mt-3">
+
+      <div className="grid grid-cols-3 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
         <Metric label="Inspected" value={totalInspected.toString()} />
-        <Metric label="Pass Rate" value={totalInspected > 0 ? `${(passRate * 100).toFixed(0)}%` : "—"} />
-        <Metric label="Avg Conf" value={totalInspected > 0 ? `${(avgConfidence * 100).toFixed(0)}%` : "—"} />
+        <Metric
+          label="Pass Rate"
+          value={totalInspected > 0 ? `${(passRate * 100).toFixed(0)}%` : "—"}
+          color={passRate >= 0.9 ? "var(--color-accent-green)" : passRate >= 0.7 ? "var(--color-accent-yellow)" : undefined}
+        />
+        <Metric
+          label="Avg Conf"
+          value={totalInspected > 0 ? `${(avgConfidence * 100).toFixed(0)}%` : "—"}
+        />
       </div>
     </div>
   );
 }
 
-function drawNode(ctx: CanvasRenderingContext2D, x: number, y: number, label: string, color: string, halfW: number) {
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 1;
-  ctx.strokeRect(x - halfW, y - 14, halfW * 2, 28);
-  ctx.fillStyle = "#FAFAFA";
-  ctx.font = "bold 9px 'JetBrains Mono', monospace";
-  ctx.fillText(label, x, y + 3);
+function FlowNode({ label, sub, highlight }: { label: string; sub?: string; highlight?: boolean }) {
+  return (
+    <div
+      className="border flex flex-col items-center justify-center px-3 shrink-0"
+      style={{
+        borderColor: highlight ? "var(--color-accent-green)" : "var(--color-border)",
+        minWidth: "64px",
+      }}
+    >
+      <span
+        className="text-[10px] font-bold uppercase tracking-wider"
+        style={{ color: highlight ? "var(--color-accent-green)" : "var(--color-text)" }}
+      >
+        {label}
+      </span>
+      {sub && (
+        <span className="text-[8px] uppercase tracking-wider mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+          {sub}
+        </span>
+      )}
+    </div>
+  );
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Arrow() {
+  return (
+    <div className="flex items-center shrink-0" style={{ color: "var(--color-text-muted)" }}>
+      <div className="w-4 h-px" style={{ background: "var(--color-border)" }} />
+      <span className="text-[10px]">&gt;</span>
+    </div>
+  );
+}
+
+function Metric({ label, value, color }: { label: string; value: string; color?: string }) {
   return (
     <div className="text-center">
-      <div className="text-2xl font-bold tabular-nums">{value}</div>
-      <div className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
+      <div className="text-lg font-bold tabular-nums" style={color ? { color } : undefined}>
+        {value}
+      </div>
+      <div className="text-[9px] uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
         {label}
       </div>
     </div>
