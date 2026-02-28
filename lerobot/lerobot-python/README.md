@@ -6,6 +6,12 @@ To determine the robot port:
 uv run lerobot-find-port
 ```
 
+Add permissions for the port:
+
+```shell
+sudo chmod 666 /dev/<port>
+```
+
 To run the controller example (change port and paths):
 
 ```shell
