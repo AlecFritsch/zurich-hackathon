@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 
 
 class RobotAdapter(ABC):
-    """Abstract base for all robot adapters (simulator, Dobot CR, etc.)."""
+    """Abstract base for all robot adapters (Dobot CR, Lerobot Remote, etc.)."""
 
     @abstractmethod
     async def pick(self) -> dict:

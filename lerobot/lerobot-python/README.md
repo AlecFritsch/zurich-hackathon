@@ -25,5 +25,16 @@ from robot_controller import RobotController
 
 with RobotController("/dev/ttyACM0", "/path/to/calibration") as controller:
     ...
+```
+
+## Robot Bridge (Remote-Steuerung)
+
+Für Havoc auf anderem Laptop — REST API starten:
+
+```shell
+uv run python robot_bridge.py
+```
+
+Server läuft auf Port 9000. Havoc verbindet sich per `LEROBOT_BRIDGE_URL`.
 
 ```

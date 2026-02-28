@@ -96,8 +96,7 @@ state = AppState()
 async def lifespan(app: FastAPI):
     from store.event_store import EventStore
     from store.policy_store import PolicyStore
-    from adapters.simulator import SimulatorAdapter
-    from adapters.dual import create_adapter
+    from adapters.broadcast_wrapper import BroadcastAdapter
     from tools.vision_tools import Camera
     from agents.report_agent import set_stores
 
@@ -109,15 +108,21 @@ async def lifespan(app: FastAPI):
 
     set_stores(state.event_store, state.policy_store)
 
-    sim = SimulatorAdapter()
-    sim.set_broadcast(state.connection_manager.broadcast)
+    if settings.robot_type == "lerobot_remote":
+        from adapters.lerobot_remote import LerobotRemoteAdapter
+        robot = LerobotRemoteAdapter(base_url=settings.lerobot_bridge_url)
+        logger.info("Using Lerobot Remote at %s", settings.lerobot_bridge_url)
+    else:
+        from adapters.dobot_cr import DobotCRAdapter
+        robot = DobotCRAdapter(
+            host=settings.dobot_host,
+            port=settings.dobot_port,
+            speed_pct=settings.max_speed_pct,
+        )
+        logger.info("Using Dobot CR at %s:%d", settings.dobot_host, settings.dobot_port)
 
-    state.adapter = create_adapter(
-        dobot_host=settings.dobot_host,
-        dobot_port=settings.dobot_port,
-        simulator=sim,
-        speed_pct=settings.max_speed_pct,
-    )
+    state.adapter = BroadcastAdapter(robot, state.connection_manager.broadcast)
+
     from tools.robot_functions import set_robot_backend
     set_robot_backend(state.adapter, state.connection_manager.broadcast)
 

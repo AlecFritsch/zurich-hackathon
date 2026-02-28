@@ -1,10 +1,4 @@
-"""Robot Function Registry — thin wrapper for Gemini Robotics-ER function calls.
-
-This module dispatches function calls from the orchestrator to the actual robot API.
-The placeholder implementations use the SimulatorAdapter as fallback.
-
-YOUR COLLEAGUE: Replace robot_move_to() and robot_grip() with real Dobot CR S0 100 code.
-"""
+"""Robot Function Registry — dispatches Gemini Robotics-ER function calls to the robot adapter."""
 
 from __future__ import annotations
 
@@ -30,11 +24,7 @@ def set_robot_backend(adapter, broadcast_fn=None):
 # ---------------------------------------------------------------------------
 
 async def robot_move_to(x: float, y: float, z: float) -> dict[str, Any]:
-    """Move the robot end-effector to a 3D position (mm).
-
-    TODO (Kollege): Replace with real Dobot CR TCP/IP command.
-    Current implementation uses the simulator adapter.
-    """
+    """Move the robot end-effector to a 3D position (mm)."""
     logger.info("ROBOT move_to(%.1f, %.1f, %.1f)", x, y, z)
 
     if _adapter:
@@ -46,15 +36,11 @@ async def robot_move_to(x: float, y: float, z: float) -> dict[str, Any]:
             logger.error("Robot move failed: %s", e)
             return {"success": False, "error": str(e), "position": [x, y, z]}
 
-    return {"success": True, "position": [x, y, z], "simulated": True}
+    return {"success": False, "position": [x, y, z], "error": "No robot adapter configured"}
 
 
 async def robot_grip(action: str) -> dict[str, Any]:
-    """Open or close the gripper.
-
-    TODO (Kollege): Replace with real Dobot CR gripper command.
-    Current implementation uses the simulator adapter.
-    """
+    """Open or close the gripper."""
     logger.info("ROBOT grip(%s)", action)
 
     if _adapter:
@@ -68,7 +54,7 @@ async def robot_grip(action: str) -> dict[str, Any]:
             logger.error("Robot grip failed: %s", e)
             return {"success": False, "error": str(e), "state": action}
 
-    return {"success": True, "state": action, "simulated": True}
+    return {"success": False, "state": action, "error": "No robot adapter configured"}
 
 
 # ---------------------------------------------------------------------------

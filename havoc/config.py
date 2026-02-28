@@ -11,7 +11,11 @@ class Settings(BaseSettings):
     dobot_host: str = "192.168.1.6"
     dobot_port: int = 29999
 
-    camera_type: str = "zed"  # "zed" | "opencv" | "websocket"
+    # Lerobot Remote (Roboter auf anderem Laptop)
+    robot_type: str = "lerobot_remote"  # "lerobot_remote" | "dobot"
+    lerobot_bridge_url: str = "http://192.168.1.10:9000"
+
+    camera_type: str = "opencv"  # "opencv" | "websocket"
     camera_ws_url: str = ""
     camera_device_id: int = 0
     camera_width: int = 1280
