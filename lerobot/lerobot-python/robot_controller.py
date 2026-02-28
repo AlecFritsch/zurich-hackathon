@@ -82,35 +82,57 @@ class RobotController():
         time.sleep(duration)  # Wait for the gripper to close
 
 
+SAVED_POSITIONS = {
+    "part_1": [ 0.21416174, -0.01358915,  0.01251318],
+    "part_2": [ 0.18637521, -0.07355577,  0.01501939],
+    "part_3": [ 0.15009942, -0.13265457,  0.0130551],
+    "part_4": [ 0.08019558, -0.1979668,   0.01522805],
+    "home": [ 0.19090396, 0.00370703, 0.14571717]
+}
+
 if __name__ == "__main__":
 
+
     with RobotController("/dev/ttyACM0", "/home/enrico/Dev/lerobot/lerobot-python/calibration") as controller:
-        while True:
-            print(controller.get_joint_angles())
-            time.sleep(0.1)
-
-        # more example usage:
-        joint_angles = controller.get_joint_angles()
-        print("Current joint angles:", joint_angles)
-
-        T = controller.get_transform(joint_angles)
-        print("Current end-effector transform:\n", T)
-
-        # Example: Move the end-effector to a new position (x, y, z)
-        target_x, target_y, target_z = 0.15, 0.01, 0.077
-        new_angles = controller.inverse_kinematics(target_x, target_y, target_z)
-        print("Calculated joint angles for target position:", new_angles)
-
-        controller.move_to_position(0.15, 0.0, 0.075, duration=1)
         controller.open_gripper()
-        controller.move_to_position(0.15, 0.0, 0.01, duration=1)
-        controller.close_gripper()
-        controller.move_to_position(0.15, 0.0, 0.075, duration=1)
-        controller.move_to_position(0.15, 0.03, 0.075, duration=1)
-        controller.move_to_position(0.15, 0.03, 0.01, duration=1)
-        controller.open_gripper()
-        controller.move_to_position(0.15, 0.03, 0.075, duration=1)
-        controller.move_to_position(0.15, 0.0, 0.075, duration=1)
+        controller.move_to_position(SAVED_POSITIONS["home"][0], SAVED_POSITIONS["home"][1], SAVED_POSITIONS["home"][2], duration=2)  # Move to home position
+     
+        for name, pos in SAVED_POSITIONS.items():
+            print(f"Moving to {name} at position {pos}")
+            controller.move_to_position(pos[0], pos[1], pos[2] + 0.05, duration=2)
+            controller.move_to_position(pos[0], pos[1], pos[2], duration=2)
+            controller.close_gripper()
+            controller.move_to_position(pos[0], pos[1], pos[2] + 0.05, duration=2)
+            controller.move_to_position(pos[0], pos[1], pos[2], duration=2)
+            controller.open_gripper()
+            controller.move_to_position(pos[0], pos[1], pos[2] + 0.05, duration=2)
+            input(f"Press Enter to move to the next position...")
 
-        input("Press Enter to exit...")
+        # with RobotController("/dev/ttyACM0", "/home/enrico/Dev/lerobot/lerobot-python/calibration") as controller:
+        #     print(controller.get_transform()[:3, 3])  # Print the current end-effector position
+
+        # # more example usage:
+        # joint_angles = controller.get_joint_angles()
+        # print("Current joint angles:", joint_angles)
+
+        # T = controller.get_transform(joint_angles)
+        # print("Current end-effector transform:\n", T)
+
+        # # Example: Move the end-effector to a new position (x, y, z)
+        # target_x, target_y, target_z = 0.15, 0.01, 0.077
+        # new_angles = controller.inverse_kinematics(target_x, target_y, target_z)
+        # print("Calculated joint angles for target position:", new_angles)
+
+        # controller.move_to_position(0.15, 0.0, 0.075, duration=1)
+        # controller.open_gripper()
+        # controller.move_to_position(0.15, 0.0, 0.01, duration=1)
+        # controller.close_gripper()
+        # controller.move_to_position(0.15, 0.0, 0.075, duration=1)
+        # controller.move_to_position(0.15, 0.03, 0.075, duration=1)
+        # controller.move_to_position(0.15, 0.03, 0.01, duration=1)
+        # controller.open_gripper()
+        # controller.move_to_position(0.15, 0.03, 0.075, duration=1)
+        # controller.move_to_position(0.15, 0.0, 0.075, duration=1)
+
+        # input("Press Enter to exit...")
 
