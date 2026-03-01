@@ -1,0 +1,513 @@
+[
+  {
+    "PHASE": 0,
+    "PART_ID": "VVQ1000W-27-16",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Manifold Base (Front)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 0,
+    "PART_ID": "VVQ1000W-27-16",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Manifold Base (Rear)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 1,
+    "PART_ID": "EX260-SPN1",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 2,
+    "PART_ID": "SY30M-1-1A-C8",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 3,
+    "PART_ID": "SY30M-15-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 3,
+    "PART_ID": "SY30M-15-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "U-U Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 4,
+    "PART_ID": "KQ2P-08",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 5,
+    "PART_ID": "AN15-C08",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 5,
+    "PART_ID": "AN15-C08",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "U-U Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 1",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 2",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 3",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 4",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 5",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 6",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 7",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 8",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 9",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 10",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 11",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 12",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 13",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 14",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 15",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY30M-2-1DA-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 16",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 7,
+    "PART_ID": "SY3000-23-33A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "D-Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 8,
+    "PART_ID": "SY30M-38-1A-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 1",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 8,
+    "PART_ID": "SY30M-38-1A-C6",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 2",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 9,
+    "PART_ID": "SY30M-60-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 3",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 10,
+    "PART_ID": "SY3400R-5U1",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 4",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 11,
+    "PART_ID": "SY3A00R-5U1",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 5",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 6",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 7",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 8",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 9",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 10",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 11",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 12",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 13",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 14",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 15",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY30M-26-1A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 16",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 1 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 2 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 3 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 4 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 5 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 6 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 7 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 8 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 9 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 10 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 11 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 12 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 13 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 14 (A port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 1 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 2 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 3 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 4 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 5 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 6 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 7 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 8 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 9 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 10 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 11 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 12 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 13 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "KQ2P-06",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 14 (B port)",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 15,
+    "PART_ID": "SY30M-3-1AR-C8",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "U-U Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 16,
+    "PART_ID": "AN05-C04",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "U-U Seite",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 17,
+    "PART_ID": "KQ2W08-99A",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "U-U Seite",
+    "TOOL": "GRIPPER"
+  }
+]
