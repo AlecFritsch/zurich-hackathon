@@ -1,45 +1,47 @@
 # Zurich Hackathon — HAVOC
 
-Document Execution Engine für Fabrik-Robotik. Dokumente werden geparst, in ausführbare Policies kompiliert, Vision AI inspiziert Teile, der Roboter sortiert.
+**Document Execution Engine** — Dokumente werden geparst, in ausführbare Policies kompiliert, Vision AI inspiziert Teile, der Roboter sortiert. Ändere das Dokument — ändere das Verhalten.
+
+## Quick Start
+
+```bash
+# Backend
+cd havoc
+pip install -r requirements.txt
+cp .env.example .env
+# GOOGLE_API_KEY in .env eintragen
+uvicorn main:app --host 0.0.0.0 --port 8000
+
+# HMI (anderes Terminal)
+cd havoc/hmi
+npm install
+npm run dev
+```
+
+→ **http://localhost:3000**
+
+## Demo-Flow
+
+1. **Upload** — PDF oder DOCX (z.B. `havoc/documents/assembly_instruction.pdf`)
+2. **Processing** — Docling parst, Gemini kompiliert Policy + Assembly-Sequenz
+3. **Approve** — Policy genehmigen (bei DRAFT)
+4. **Inspect** — Kamera + Vision AI (Header)
+5. **Assembly** — Montagesequenz ausführen (Header)
 
 ## Projektstruktur
 
 | Ordner | Beschreibung |
 |--------|--------------|
-| **havoc/** | Haupt-App: FastAPI Backend, Next.js HMI, Docling, Gemini, Lerobot |
-| **lerobot/** | Robot Stack: SO101 Controller, Robot Bridge (REST :9000) |
-| **scripts/** | Start-Skripte, Kamera-Kalibrierung, Kamera–Roboter-Kalibrierung |
-| **humanCentricInstructionUnderstandingForRobotTaskPlanning/** | Experimentelles Notebook für Montageanleitungen |
-
-## Quick Start
-
-```powershell
-# Alles starten (Robot Bridge + Havoc)
-.\scripts\start.ps1
-```
-
-Oder manuell: `havoc/README.md` für Backend + HMI, `scripts/README.md` für Kalibrierung.
-
-**Production:** `ENV=production`, `CORS_ORIGINS` und `NEXT_PUBLIC_HAVOC_URL` setzen — siehe `havoc/README.md`.
-
-## Abhängigkeiten
-
-| Komponente | Install |
-|------------|---------|
-| Havoc | `cd havoc && pip install -r requirements.txt` |
-| HMI | `cd havoc/hmi && npm install` |
-| Lerobot | `cd lerobot/lerobot-python && uv sync` |
-| Kalibrierung | `opencv-python`, `numpy`, `pinocchio` (optional) |
+| **havoc/** | FastAPI Backend, Next.js HMI, Docling, Gemini |
+| **lerobot/** | Robot Stack (SO101, Bridge) |
+| **humanCentricInstructionUnderstandingForRobotTaskPlanning/** | Notebook-Referenz |
 
 ## API
 
 - `POST /documents/upload` — Dokument hochladen
-- `POST /policies/compile/{doc_id}` — Policy kompilieren
-- `POST /documents/{doc_id}/assembly-sequence` — Montagesequenz aus PDF (Docling + Gemini Vision)
-- `POST /inspect` — Teil inspizieren (Kamera oder Base64)
+- `POST /inspect` — Teil inspizieren
 - `GET /camera/snapshot` — Kamera-Snapshot
 
 ## Dokumentation
 
-- [havoc/README.md](havoc/README.md) — Vollständige Havoc-Dokumentation
-- [scripts/README.md](scripts/README.md) — Kalibrierung & Start
+- [havoc/README.md](havoc/README.md) — Backend & HMI Details

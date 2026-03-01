@@ -31,17 +31,17 @@ def process_layered_robotic_assembly(file_path: str | Path) -> list[dict]:
 
     client = genai.Client(api_key=settings.google_api_key)
 
-    # Step 1: Docling extract
+    # Step 1: Docling extract (same as notebook)
     from tools.docling_tools import parse_document_full
     parsed = parse_document_full(file_path)
-    document_markdown = parsed.markdown[:8000]
+    document_markdown = parsed.markdown[:15000]  # Full context for Stückliste + matrix
 
     # Step 2: Upload PDF for vision
     logger.info("Uploading %s to Gemini Files API...", file_path.name)
     uploaded = client.files.upload(file=str(file_path))
-    logger.info("File uploaded, generating assembly sequence with %s...", settings.gemini_vision_model)
+    logger.info("File uploaded, generating assembly sequence with %s...", settings.gemini_assembly_model)
 
-    # Step 3: Gemini Vision prompt
+    # Step 3: Gemini Vision prompt — exact match to notebook (proven demo)
     prompt = f"""You are an expert robotics control engineer. You are provided with a visual PDF and its Docling-extracted Markdown text.
 
 CRITICAL INSTRUCTION 1 - INVENTORY CHECKSUM:
@@ -50,21 +50,18 @@ Read the 'Stückliste' (Parts List) from the Markdown text. The exact 'Stück' (
 CRITICAL INSTRUCTION 2 - LAYERED ASSEMBLY LOGIC (ROW-BY-ROW):
 Look visually at the 'Stationsbelegung' matrix in the PDF. The ROWS represent the chronological phases (layers) of assembly. Do NOT build this station-by-station.
 
-Trace the visual grid from TOP row to BOTTOM row:
+You must trace the visual grid from the TOP row to the BOTTOM row:
 - Phase 0 (Row 1): Identify the part. Find every column (D-Seite, Station 1-16, U-Seite) with an 'X' or mark. Generate a step for each.
-- Phase 1 (Row 2): Repeat for the next part.
-- Continue row-by-row.
+- Phase 1 (Row 2): Repeat for the next part down the list.
+- Continue row-by-row. This naturally results in placing all base plates across the manifold in one phase, then placing specific valves in a later phase, etc.
 
 Output ONLY a strict JSON array of objects. No conversational text. No markdown code blocks.
 
-If the document has a Stückliste/Parts List and Stationsbelegung matrix: use row-by-row phases.
-If the document is a generic assembly instruction: extract steps in reading order (top-to-bottom, left-to-right).
-Always return at least one step if any assembly info is present.
-
-Format:
+Format Example:
 [
-  {{"PHASE": 0, "PART_ID": "...", "ACTION": "PICK_AND_PLACE", "TARGET_LOCATION": "...", "TOOL": "GRIPPER"}},
-  ...
+  {{"PHASE": 0, "PART_ID": "SY30M-1-1A-C8", "ACTION": "PICK_AND_PLACE", "TARGET_LOCATION": "D-Seite", "TOOL": "GRIPPER"}},
+  {{"PHASE": 6, "PART_ID": "SY30M-2-1DA-C6", "ACTION": "PICK_AND_PLACE", "TARGET_LOCATION": "Station 1", "TOOL": "GRIPPER"}},
+  {{"PHASE": 6, "PART_ID": "SY30M-2-1DA-C6", "ACTION": "PICK_AND_PLACE", "TARGET_LOCATION": "Station 2", "TOOL": "GRIPPER"}}
 ]
 
 Docling Text Reference:
@@ -72,7 +69,7 @@ Docling Text Reference:
 """
 
     response = client.models.generate_content(
-        model=settings.gemini_vision_model,
+        model=settings.gemini_assembly_model,
         contents=[uploaded, prompt],
     )
     full_text = response.text or ""

@@ -2,26 +2,21 @@
 
 > Documents don't get read — they get run.
 
-Upload any factory document. Docling parses it. Gemini compiles it into executable policy. Vision AI inspects parts. The robot sorts them. Change the document — change the behavior. Zero code changes.
+Upload any factory document. Docling parses it. Gemini compiles it into executable policy. Vision AI inspects parts. The robot sorts them. Change the document — change the behavior.
 
 ## Quick Start
 
-### 1. Backend
+### Backend
 
 ```bash
 cd havoc
 pip install -r requirements.txt
 cp .env.example .env
-# Edit .env with your GOOGLE_API_KEY
+# GOOGLE_API_KEY in .env eintragen
 uvicorn main:app --reload --port 8000
 ```
 
-**Production:**
-```bash
-ENV=production CORS_ORIGINS=https://your-frontend.com uvicorn main:app --host 0.0.0.0 --port 8000
-```
-
-### 2. Frontend
+### HMI
 
 ```bash
 cd havoc/hmi
@@ -29,79 +24,38 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000
+→ http://localhost:3000
 
-**Production:** Set `NEXT_PUBLIC_HAVOC_URL` to your backend URL (e.g. `https://api.example.com`), then `npm run build && npm start`.
+## Demo-Flow
 
-### 3. Demo Flow
+1. Upload PDF/DOCX (z.B. `documents/assembly_instruction.pdf`)
+2. Docling parst, Gemini kompiliert Policy + Assembly-Sequenz
+3. Approve (bei DRAFT)
+4. Inspect — Kamera + Vision AI
+5. Assembly — Montagesequenz ausführen
 
-1. Upload `documents/sorting_procedure.md` (oder PDF/DOCX)
-2. System parses via Docling, compiles policy via Gemini
-3. Approve the policy
-4. Click INSPECT — camera captures, Gemini classifies, robot sorts
-
-## Architecture
-
-```
-Document (PDF/DOCX/Image)
-  → Docling (TableFormer, OCR, Layout Analysis)
-  → Gemini (Policy Compilation)
-  → Human Approval
-  → Vision AI (Classify + Defect Detect)
-  → Rule Engine (Safe evaluation)
-  → Robot Adapter (Lerobot Remote / Dobot CR)
-  → HMI (Swiss Brutalism Dashboard)
-```
-
-**Hybrid Architecture:**
-- LangGraph Supervisor for document/report flows (multi-step reasoning)
-- Direct async pipeline for inspection (sub-3s latency)
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Backend | Python + FastAPI |
-| Multi-Agent | LangChain + LangGraph |
-| Document AI | Docling (local) |
-| LLM | Gemini 3.1 Pro Preview (Policy, Q&A) + Gemini Robotics-ER 1.5 (Inspection, Robot) |
-| Vision | OpenCV + Gemini Vision |
-| Robot | Lerobot Remote / Dobot CR |
-| Frontend | Next.js + Tailwind |
-| Database | SQLite (WAL mode) |
-| Real-time | WebSocket |
-
-## Camera OCR & Calibration
-
-- **POST /camera/ocr** — Capture frame, undistort (if calibrated), run Gemini 3.1 Pro Preview OCR. Returns `{parts: [{part_type, detected_text}]}`.
-- Calibration: Run `scripts/calibration.py` to produce `usb_camera_intrinsics.npz`. Place in project root. Undistortion applies to snapshot and OCR.
-
-## API Keys & Model
+## API Keys
 
 ```env
 GOOGLE_API_KEY=your-gemini-api-key
 ```
 
-Default models: **gemini-3.1-pro-preview** (Policy, OCR, Q&A) | **gemini-robotics-er-1.5-preview** (Inspection, Robot). Override via `GEMINI_MODEL`, `GEMINI_ORCHESTRATOR_MODEL`, `GEMINI_VISION_MODEL` in `.env`.
+Optional: `GEMINI_ASSEMBLY_MODEL=gemini-3-flash-preview` für Assembly-Sequenz.
 
-## Distributed Setup (Lerobot auf anderem Laptop)
+## Tech Stack
 
-Wenn der Roboter (Lerobot SO101) auf einem anderen Laptop läuft:
+| Layer | Technology |
+|-------|------------|
+| Backend | FastAPI, Docling, Gemini |
+| Frontend | Next.js, Tailwind |
+| Robot | Lerobot Remote / Dobot |
+| Real-time | WebSocket |
 
-**1. Auf Lerobot-Laptop** (mit Serial-Port):
+## Robot (optional)
+
 ```bash
 cd lerobot/lerobot-python
-uv sync
 uv run python robot_bridge.py
-# Oder: uvicorn robot_bridge:app --host 0.0.0.0 --port 9000
 ```
 
-**2. In havoc/.env** (auf diesem Laptop):
-```env
-ROBOT_TYPE=lerobot_remote
-LEROBOT_BRIDGE_URL=http://<IP-Lerobot-Laptop>:9000
-```
-
-**3. Netzwerk:** Beide Laptops im gleichen Netzwerk. IP des Lerobot-Laptops in LEROBOT_BRIDGE_URL eintragen.
-
-That's it. Everything else is local.
+In `havoc/.env`: `LEROBOT_BRIDGE_URL=http://localhost:9000`

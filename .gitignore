@@ -20,6 +20,7 @@ cam_to_robot_transform.npy
 node_modules/
 .next/
 out/
+*.pack.gz
 
 # IDE
 .vscode/
