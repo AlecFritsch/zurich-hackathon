@@ -3,41 +3,59 @@
 import { useCallback, useState } from "react";
 import { ExecutablePolicy } from "../lib/types";
 
+interface AssemblyStep {
+  PHASE: number;
+  PART_ID: string;
+  ACTION: string;
+  TARGET_LOCATION: string;
+  TOOL: string;
+}
+
 interface PolicyPanelProps {
   policy: ExecutablePolicy | null;
-  onUpload: (file: File) => void;
+  assemblySequence?: AssemblyStep[] | null;
+  assemblyError?: string | null;
+  uploadError?: string | null;
+  processingStep?: string;
+  onUpload: (file: File) => Promise<void>;
   onApprove: (policyId: string) => void;
   onReject: (policyId: string) => void;
 }
 
-export default function PolicyPanel({ policy, onUpload, onApprove, onReject }: PolicyPanelProps) {
+export default function PolicyPanel({ policy, assemblySequence, assemblyError, uploadError, processingStep, onUpload, onApprove, onReject }: PolicyPanelProps) {
   const [dragging, setDragging] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<string | null>(null);
 
   const handleDrop = useCallback(
-    (e: React.DragEvent) => {
+    async (e: React.DragEvent) => {
       e.preventDefault();
       setDragging(false);
       const file = e.dataTransfer.files[0];
       if (file) {
         setUploading(true);
         setUploadedFile(file.name);
-        onUpload(file);
-        setTimeout(() => setUploading(false), 2000);
+        try {
+          await onUpload(file);
+        } finally {
+          setUploading(false);
+        }
       }
     },
     [onUpload]
   );
 
   const handleFileInput = useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
+    async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (file) {
         setUploading(true);
         setUploadedFile(file.name);
-        onUpload(file);
-        setTimeout(() => setUploading(false), 2000);
+        try {
+          await onUpload(file);
+        } finally {
+          setUploading(false);
+        }
       }
     },
     [onUpload]
@@ -69,10 +87,10 @@ export default function PolicyPanel({ policy, onUpload, onApprove, onReject }: P
         onClick={() => document.getElementById("file-input")?.click()}
       >
         <div className="text-[10px] uppercase tracking-widest">
-          {uploading ? `Processing ${uploadedFile}...` : "Drop Document"}
+          {uploading ? (processingStep || `Processing ${uploadedFile}...`) : "Drop Document"}
         </div>
         <div className="text-[10px] mt-1" style={{ color: "var(--color-text-muted)" }}>
-          PDF, DOCX, PPTX, Image
+          {uploading ? "PDF kann 1–2 Min. dauern…" : "PDF, DOCX, PPTX, Image"}
         </div>
         <input
           id="file-input"
@@ -82,6 +100,12 @@ export default function PolicyPanel({ policy, onUpload, onApprove, onReject }: P
           accept=".pdf,.docx,.pptx,.png,.jpg,.jpeg,.tiff,.md"
         />
       </div>
+
+      {uploadError && (
+        <div className="text-[10px] p-2" style={{ color: "var(--color-accent-red)", background: "rgba(255,51,51,0.1)" }}>
+          {uploadError}
+        </div>
+      )}
 
       {policy && (
         <div className="space-y-3">
@@ -100,8 +124,26 @@ export default function PolicyPanel({ policy, onUpload, onApprove, onReject }: P
           <div className="grid grid-cols-3 gap-2 text-center">
             <MiniStat label="Rules" value={policy.decision_rules.length.toString()} />
             <MiniStat label="Safety" value={policy.safety_constraints.length.toString()} />
-            <MiniStat label="Sources" value={policy.source_documents.length.toString()} />
+            <MiniStat label="Assembly" value={assemblySequence?.length ? `${assemblySequence.length}` : assemblyError ? "Fehler" : "—"} title={assemblyError || undefined} />
           </div>
+
+          {assemblySequence && assemblySequence.length > 0 && (
+            <div className="space-y-1 max-h-24 overflow-y-auto">
+              <div className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-accent-green)" }}>
+                Assembly Sequence (auto)
+              </div>
+              {assemblySequence.slice(0, 5).map((s, i) => (
+                <div key={i} className="text-[10px] truncate" style={{ color: "var(--color-text-muted)" }}>
+                  P{s.PHASE}: {s.PART_ID} → {s.TARGET_LOCATION}
+                </div>
+              ))}
+              {assemblySequence.length > 5 && (
+                <div className="text-[9px]" style={{ color: "var(--color-text-muted)" }}>
+                  +{assemblySequence.length - 5} more
+                </div>
+              )}
+            </div>
+          )}
 
           {policy.status === "DRAFT" && (
             <div className="flex gap-2">
@@ -190,9 +232,9 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function MiniStat({ label, value, title }: { label: string; value: string; title?: string }) {
   return (
-    <div className="border p-2" style={{ borderColor: "var(--color-border)" }}>
+    <div className="border p-2" style={{ borderColor: "var(--color-border)" }} title={title}>
       <div className="text-sm font-bold tabular-nums">{value}</div>
       <div className="text-[9px] uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
         {label}

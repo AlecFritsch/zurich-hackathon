@@ -275,6 +275,9 @@ class DocumentUploadResponse(BaseModel):
     tables_found: int
     sections: list[str]
     parse_time_ms: float
+    policy: dict | None = None  # compiled policy (ready for approve)
+    assembly_sequence: list[dict] | None = None  # layered sequence if PDF/image
+    assembly_error: str | None = None  # Fehlermeldung wenn Assembly-Generierung fehlschlägt
 
 
 class PolicyApprovalRequest(BaseModel):

@@ -16,6 +16,8 @@ const API = "http://localhost:8000";
 export default function Dashboard() {
   const [status, setStatus] = useState("READY");
   const [policy, setPolicy] = useState<ExecutablePolicy | null>(null);
+  const [assemblySequence, setAssemblySequence] = useState<Array<{ PHASE: number; PART_ID: string; ACTION: string; TARGET_LOCATION: string; TOOL: string }> | null>(null);
+  const [assemblyError, setAssemblyError] = useState<string | null>(null);
   const [events, setEvents] = useState<InspectionResult[]>([]);
   const [lastResult, setLastResult] = useState<InspectionResult | null>(null);
   const [isInspecting, setIsInspecting] = useState(false);
@@ -89,25 +91,31 @@ export default function Dashboard() {
     };
   }, []);
 
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [processingStep, setProcessingStep] = useState<string>("");
+
   const handleUpload = useCallback(async (file: File) => {
+    setUploadError(null);
+    setAssemblyError(null);
+    setProcessingStep("Starting...");
     const form = new FormData();
     form.append("file", file);
 
     try {
       const res = await fetch(`${API}/documents/upload`, { method: "POST", body: form });
       if (!res.ok) {
-        console.error("Upload failed:", await res.text());
+        const err = await res.text();
+        setUploadError(err || `Upload fehlgeschlagen (${res.status})`);
         return;
       }
       const doc = await res.json();
-
-      const compileRes = await fetch(`${API}/policies/compile/${doc.document_id}`, { method: "POST" });
-      if (compileRes.ok) {
-        const compiled = await compileRes.json();
-        setPolicy(compiled);
-      }
+      if (doc.policy) setPolicy(doc.policy);
+      setAssemblySequence(doc.assembly_sequence?.length ? doc.assembly_sequence : null);
+      setAssemblyError(doc.assembly_error || null);
+      setProcessingStep("");
     } catch (e) {
-      console.error("Upload failed:", e);
+      setUploadError(String(e));
+      setProcessingStep("");
     }
   }, []);
 
@@ -184,6 +192,10 @@ export default function Dashboard() {
         >
           <PolicyPanel
             policy={policy}
+            assemblySequence={assemblySequence}
+            assemblyError={assemblyError}
+            uploadError={uploadError}
+            processingStep={processingStep}
             onUpload={handleUpload}
             onApprove={handleApprove}
             onReject={handleReject}

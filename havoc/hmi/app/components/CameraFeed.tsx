@@ -5,7 +5,7 @@ import { InspectionResult } from "../lib/types";
 
 /** Same-origin via Next.js proxy → localhost:8000 */
 const SNAPSHOT_URL = "/api/camera/snapshot";
-const POLL_MS = 250;
+const POLL_MS = 34;  // ~30fps
 
 interface CameraFeedProps {
   lastResult: InspectionResult | null;

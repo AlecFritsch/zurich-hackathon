@@ -188,34 +188,33 @@ class Camera:
 
     def _try_open_opencv(self) -> None:
         import sys
-        # Windows: CAP_DSHOW first; bei "camera switch failed" CAP_MSMF als Fallback
-        # (DSHOW + MSMF nicht mischen: beide Backends nutzen)
+        # Nur konfigurierte Kamera (kein Fallback auf Webcam). CAMERA_DEVICE_ID=0 = externe, 1 = Webcam
         apis = [cv2.CAP_DSHOW, cv2.CAP_MSMF] if sys.platform == "win32" else [cv2.CAP_ANY]
         for api in apis:
-            for idx in [self._device_id, 0, 1, 2]:
-                try:
-                    self._cap = cv2.VideoCapture(idx, api)
-                except Exception as e:
-                    logger.debug("VideoCapture(%d, %s) failed: %s", idx, api, e)
-                    continue
-                if self._cap.isOpened():
+            try:
+                self._cap = cv2.VideoCapture(self._device_id, api)
+            except Exception as e:
+                logger.debug("VideoCapture(%d, %s) failed: %s", self._device_id, api, e)
+                continue
+            if self._cap.isOpened():
+                ret, _ = self._cap.read()
+                if ret:
                     try:
                         self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
                         self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
                     except Exception:
                         pass
                     self._backend = "opencv"
-                    self._device_id = idx
                     api_name = "DSHOW" if api == cv2.CAP_DSHOW else "MSMF" if api == cv2.CAP_MSMF else str(api)
-                    logger.info("OpenCV camera opened — device %d (api=%s)", idx, api_name)
+                    logger.info("OpenCV camera opened — device %d (api=%s)", self._device_id, api_name)
                     return
-                try:
-                    self._cap.release()
-                except Exception:
-                    pass
-                self._cap = None
+            try:
+                self._cap.release()
+            except Exception:
+                pass
+            self._cap = None
         self._backend = "none"
-        logger.warning("No camera available — tried devices 0,1,2 with DSHOW and MSMF")
+        logger.warning("No camera at device %d — set CAMERA_DEVICE_ID=0 or 1 in havoc/.env", self._device_id)
 
     def is_open(self) -> bool:
         if self._backend == "websocket":

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     camera_height: int = 720
     camera_fps: int = 30
     calibration_path: str = ""  # usb_camera_intrinsics.npz or camera_calibration.json
+    cam_to_robot_transform_path: str = ""  # cam_to_robot_transform.npy (ArUco calibration)
 
     sqlite_path: str = "events.db"
     documents_dir: Path = Path("documents")

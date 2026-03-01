@@ -79,7 +79,9 @@ class AppState:
         self.connection_manager = ConnectionManager()
         self.part_counter: int = 0
         self.parsed_documents: dict[str, Any] = {}
+        self.assembly_sequences: dict[str, list] = {}  # doc_id -> layered sequence
         self.system_status: str = "INITIALIZING"
+        self.processing_step: str = ""  # z.B. "Parsing...", "Compiling policy...", "Assembly..."
         self.confidence_threshold: float = settings.confidence_high
 
 
@@ -223,6 +225,7 @@ async def camera_ocr(prompt: str | None = None):
 
 @app.post("/documents/upload", response_model=DocumentUploadResponse)
 async def upload_document(file: UploadFile = File(...)):
+    """Upload → Parse → Compile Policy → Assembly Sequence (if PDF). All automatic."""
     filename = file.filename or f"upload-{uuid.uuid4().hex[:8]}"
     doc_id = str(uuid.uuid4())
     dest = settings.documents_dir / filename
@@ -233,6 +236,9 @@ async def upload_document(file: UploadFile = File(...)):
     logger.info("Document saved: %s → %s", filename, dest)
 
     from tools.docling_tools import parse_document_full
+
+    state.processing_step = "Parsing..."
+    await state.connection_manager.broadcast_event(WSEventType.STATUS, {"message": "Parsing...", "step": "parse"})
 
     try:
         parsed = await asyncio.to_thread(parse_document_full, dest)
@@ -257,9 +263,47 @@ async def upload_document(file: UploadFile = File(...)):
         source_document=filename,
     ))
 
+    # --- AUTO: Compile Policy ---
+    state.processing_step = "Compiling policy..."
+    await state.connection_manager.broadcast_event(WSEventType.STATUS, {"message": "Compiling policy...", "step": "compile"})
+    policy = await _compile_policy_for_doc(doc_id, parsed)
+    await state.policy_store.store(policy)
+    await state.connection_manager.broadcast_event(
+        WSEventType.POLICY_UPDATE,
+        {"policy": policy.model_dump(mode="json")},
+    )
+
+    # --- AUTO: Assembly Sequence (PDF/image only) ---
+    assembly_sequence = None
+    assembly_error: str | None = None
+    if dest.suffix.lower() in (".pdf", ".png", ".jpg", ".jpeg"):
+        state.processing_step = "Generating assembly sequence..."
+        await state.connection_manager.broadcast_event(WSEventType.STATUS, {"message": "Generating assembly sequence...", "step": "assembly"})
+        try:
+            from tools.assembly_tools import process_layered_robotic_assembly
+            assembly_sequence = await asyncio.to_thread(process_layered_robotic_assembly, dest)
+            if isinstance(assembly_sequence, list) and assembly_sequence and "error" in assembly_sequence[0]:
+                assembly_error = assembly_sequence[0].get("error", "Parse error") or ""
+                raw = assembly_sequence[0].get("raw_preview", "")
+                if raw:
+                    assembly_error = f"{assembly_error} (Preview: {raw[:200]}...)" if len(raw) > 200 else f"{assembly_error} (Preview: {raw})"
+                logger.warning("Assembly parse failed: %s", assembly_error)
+                assembly_sequence = None
+            elif isinstance(assembly_sequence, list) and assembly_sequence:
+                state.assembly_sequences[doc_id] = assembly_sequence
+                logger.info("Assembly sequence: %d steps", len(assembly_sequence))
+            else:
+                if isinstance(assembly_sequence, list) and not assembly_sequence:
+                    assembly_error = "Keine Assembly-Schritte aus Dokument extrahiert"
+                assembly_sequence = None
+        except Exception as e:
+            assembly_error = str(e)
+            logger.warning("Assembly sequence failed: %s", e, exc_info=True)
+
+    state.processing_step = ""
     await state.connection_manager.broadcast_event(
         WSEventType.STATUS,
-        {"message": f"Document parsed: {filename}", "document_id": doc_id},
+        {"message": f"Document ready: {filename}", "document_id": doc_id, "step": "done"},
     )
 
     return DocumentUploadResponse(
@@ -269,6 +313,9 @@ async def upload_document(file: UploadFile = File(...)):
         tables_found=parsed.tables_found,
         sections=parsed.sections,
         parse_time_ms=parsed.parse_time_ms,
+        policy=policy.model_dump(mode="json"),
+        assembly_sequence=assembly_sequence,
+        assembly_error=assembly_error,
     )
 
 
@@ -300,21 +347,31 @@ async def get_document_tables(doc_id: str):
     return {"tables": state.parsed_documents[doc_id].tables_data}
 
 
+@app.post("/documents/{doc_id}/assembly-sequence")
+async def get_assembly_sequence(doc_id: str):
+    """Extract layered robot assembly sequence from document (PDF) via Docling + Gemini Vision."""
+    if doc_id not in state.parsed_documents:
+        raise HTTPException(404, "Document not found")
+    parsed = state.parsed_documents[doc_id]
+    file_path = settings.documents_dir / parsed.filename
+    if not file_path.exists():
+        raise HTTPException(404, f"File not found: {parsed.filename}")
+    if file_path.suffix.lower() not in (".pdf", ".png", ".jpg", ".jpeg"):
+        raise HTTPException(400, "Assembly sequence requires PDF or image")
+    from tools.assembly_tools import process_layered_robotic_assembly
+    sequence = await asyncio.to_thread(process_layered_robotic_assembly, file_path)
+    return {"sequence": sequence, "document_id": doc_id, "filename": parsed.filename}
+
+
 # ---------------------------------------------------------------------------
 # Policy Compilation (via Supervisor)
 # ---------------------------------------------------------------------------
 
-@app.post("/policies/compile/{doc_id}")
-async def compile_policy(doc_id: str):
-    if doc_id not in state.parsed_documents:
-        raise HTTPException(404, "Document not found")
-
-    parsed = state.parsed_documents[doc_id]
-
+async def _compile_policy_for_doc(doc_id: str, parsed) -> ExecutablePolicy:
+    """Compile policy from parsed document. Used by upload flow."""
     try:
         from agents.supervisor import create_havoc_supervisor
         supervisor = create_havoc_supervisor()
-
         result = await asyncio.to_thread(
             supervisor.invoke,
             {"messages": [{
@@ -328,9 +385,7 @@ async def compile_policy(doc_id: str):
                 ),
             }]},
         )
-
         last_msg = result["messages"][-1].content if result.get("messages") else ""
-
         try:
             start = last_msg.find("{")
             end = last_msg.rfind("}") + 1
@@ -341,17 +396,21 @@ async def compile_policy(doc_id: str):
                 policy = _build_fallback_policy(parsed)
         except Exception:
             policy = _build_fallback_policy(parsed)
-
     except Exception as e:
         logger.warning("Supervisor compilation failed: %s — using fallback", e)
         policy = _build_fallback_policy(parsed)
-
     from models import DocumentSource
-    policy.source_documents = [DocumentSource(
-        document_id=doc_id,
-        document_name=parsed.filename,
-    )]
+    policy.source_documents = [DocumentSource(document_id=doc_id, document_name=parsed.filename)]
+    return policy
 
+
+@app.post("/policies/compile/{doc_id}")
+async def compile_policy(doc_id: str):
+    """Re-compile policy (e.g. after edit). Upload already compiles automatically."""
+    if doc_id not in state.parsed_documents:
+        raise HTTPException(404, "Document not found")
+    parsed = state.parsed_documents[doc_id]
+    policy = await _compile_policy_for_doc(doc_id, parsed)
     await state.policy_store.store(policy)
 
     await state.event_store.emit(FactoryEvent(
@@ -650,10 +709,12 @@ async def get_stats():
 
 @app.get("/status")
 async def system_status():
+    """Returns system status and current processing step."""
     from tools.vision_tools import load_calibration
     mtx, _ = load_calibration()
     return {
         "status": state.system_status,
+        "processing_step": state.processing_step,
         "camera": state.camera.is_open() if state.camera else False,
         "camera_backend": state.camera._backend if state.camera else "none",
         "calibration_loaded": mtx is not None,
