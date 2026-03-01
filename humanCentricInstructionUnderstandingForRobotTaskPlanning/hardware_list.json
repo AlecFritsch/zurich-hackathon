@@ -1,0 +1,92 @@
+[
+  {
+    "PART_ID": "EX260-SPN1",
+    "QUANTITY": 1,
+    "DESCRIPTION": "SI-EinheitPROFINET32Ausange（negativCOM）M12"
+  },
+  {
+    "PART_ID": "KQ2W08-99A",
+    "QUANTITY": 1,
+    "DESCRIPTION": "L-Fitting(P)"
+  },
+  {
+    "PART_ID": "SY30M-1-1A-C8",
+    "QUANTITY": 1,
+    "DESCRIPTION": "Versorgungs-/EntluftungsplatteD-Seite,Push-lnDm8"
+  },
+  {
+    "PART_ID": "SY30M-15-1A",
+    "QUANTITY": 2,
+    "DESCRIPTION": "BefestigungsklammerfurDINSchiene"
+  },
+  {
+    "PART_ID": "KQ2P-08",
+    "QUANTITY": 1,
+    "DESCRIPTION": "BlindstopfenfurPush-inDm8.weif(P)"
+  },
+  {
+    "PART_ID": "AN15-C08",
+    "QUANTITY": 2,
+    "DESCRIPTION": "SchalldampferKunststoffDm8(R)"
+  },
+  {
+    "PART_ID": "SY30M-2-1DA-C6",
+    "QUANTITY": 16,
+    "DESCRIPTION": "EinzelanschlussplattePin,SY3000"
+  },
+  {
+    "PART_ID": "SY3000-23-33A",
+    "QUANTITY": 1,
+    "DESCRIPTION": "SchraubezuSY3000M2,2Stk."
+  },
+  {
+    "PART_ID": "SY30M-38-1A-C6",
+    "QUANTITY": 2,
+    "DESCRIPTION": "IndividuelleVersorgungseinheit,SY3000"
+  },
+  {
+    "PART_ID": "SY30M-60-1A",
+    "QUANTITY": 1,
+    "DESCRIPTION": "EntsperrbaresDoppelruickschlagventilmitRestdruckentif"
+  },
+  {
+    "PART_ID": "SY3400R-5U1",
+    "QUANTITY": 1,
+    "DESCRIPTION": "5/3WegeventilMitelst.offen2"
+  },
+  {
+    "PART_ID": "SY3A00R-5U1",
+    "QUANTITY": 1,
+    "DESCRIPTION": "2x3/2Wegeventil,N.C.N.C.24VDC"
+  },
+  {
+    "PART_ID": "SY30M-26-1A",
+    "QUANTITY": 14,
+    "DESCRIPTION": "BlindplatteTyp13000"
+  },
+  {
+    "PART_ID": "KQ2P-06",
+    "QUANTITY": 14,
+    "DESCRIPTION": "BlindstopfenfurPush-inDm6.weif（A）"
+  },
+  {
+    "PART_ID": "KQ2P-06",
+    "QUANTITY": 14,
+    "DESCRIPTION": "BlindstopfenfurPush-inDm6.weifs(B)"
+  },
+  {
+    "PART_ID": "SY30M-3-1AR-C8",
+    "QUANTITY": 1,
+    "DESCRIPTION": "Versorgungs-/EntluftungsendplatteU-SeitePush-inDm8"
+  },
+  {
+    "PART_ID": "VVQ1000W-27-16",
+    "QUANTITY": 2,
+    "DESCRIPTION": "Zugankerfur16Stationen"
+  },
+  {
+    "PART_ID": "AN05-C04",
+    "QUANTITY": 1,
+    "DESCRIPTION": "Silencerresin,Fitting4mm"
+  }
+]
