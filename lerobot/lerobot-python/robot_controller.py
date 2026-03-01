@@ -57,20 +57,19 @@ class RobotController():
         return self.kinematics.inverse_kinematics(joint_angles, target_pose)
     
     def move_to_position(self, x, y, z, duration, dt=0.02):
-        print(f"move_to_position: x={x}, y={y}, z={z}, duration={duration}")
         current_angles = self.get_joint_angles()
         target_angles = self.inverse_kinematics(x, y, z, joint_angles=current_angles)
 
         delta = target_angles - current_angles
 
-        steps = int(duration / dt)
+        steps = max(1, int(duration / dt))
         for step in range(steps):
-            # print(step, "/", steps)
-            angles = current_angles + delta * (step / steps)
+            t = (step + 1) / steps
+            angles = current_angles + delta * t
             self.set_joint_angles(angles)
             time.sleep(dt)
-        self.set_joint_angles(target_angles)  # Ensure we end at the exact target angles
-    
+        self.set_joint_angles(target_angles)
+
     def open_gripper(self, duration=0.5, open_position=10.0):
         command = {'gripper.pos': open_position}
         self.robot.send_action(command)

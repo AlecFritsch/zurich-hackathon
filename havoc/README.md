@@ -69,7 +69,7 @@ Document (PDF/DOCX/Image)
 ## Camera OCR & Calibration
 
 - **POST /camera/ocr** — Capture frame, undistort (if calibrated), run Gemini 3.1 Pro Preview OCR. Returns `{parts: [{part_type, detected_text}]}`.
-- Calibration: Run `calibration.py` (root) to produce `usb_camera_intrinsics.npz`. Place in project root. Undistortion applies to stream, snapshot, and OCR.
+- Calibration: Run `scripts/calibration.py` to produce `usb_camera_intrinsics.npz`. Place in project root. Undistortion applies to snapshot and OCR.
 
 ## API Keys & Model
 

@@ -14,7 +14,6 @@ from typing import Any
 
 from fastapi import FastAPI, File, UploadFile, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
 
 from config import settings
 from models import (
@@ -198,16 +197,6 @@ async def websocket_endpoint(ws: WebSocket):
 # ---------------------------------------------------------------------------
 # Camera
 # ---------------------------------------------------------------------------
-
-@app.get("/camera/stream")
-async def camera_stream():
-    if not state.camera or not state.camera.is_open():
-        raise HTTPException(503, "Camera not available")
-    return StreamingResponse(
-        state.camera.generate_mjpeg(),
-        media_type="multipart/x-mixed-replace; boundary=frame",
-    )
-
 
 @app.get("/camera/snapshot")
 async def camera_snapshot():

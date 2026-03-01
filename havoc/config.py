@@ -11,9 +11,9 @@ class Settings(BaseSettings):
     dobot_host: str = "192.168.1.6"
     dobot_port: int = 29999
 
-    # Lerobot Remote (Roboter auf anderem Laptop)
+    # Lerobot Remote (Robot Bridge in WSL auf diesem Rechner)
     robot_type: str = "lerobot_remote"  # "lerobot_remote" | "dobot"
-    lerobot_bridge_url: str = "http://192.168.1.10:9000"
+    lerobot_bridge_url: str = "http://localhost:9000"
 
     camera_type: str = "opencv"  # "opencv" | "websocket"
     camera_ws_url: str = ""

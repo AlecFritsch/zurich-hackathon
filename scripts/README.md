@@ -1,11 +1,8 @@
 # Scripts
 
-Standalone utilities for camera and OCR. Run from project root: `python scripts/ocr.py`
-
 | Script | Usage |
 |--------|-------|
-| `ocr.py` | Live OCR — Space=run, q=quit. Results → `ocr_results.txt` |
+| `start.ps1` | **Alles starten:** Robot Bridge (WSL) + Havoc. Von Projektroot: `.\scripts\start.ps1` |
 | `calibration.py` | Checkerboard calibration → `usb_camera_intrinsics.npz` |
-| `camera_preview.py` | Live camera preview |
 
-**Env:** `OCR_CAMERA=1` / `CALIBRATION_CAMERA=1` | `OCR_FOV_MARGIN=0.1` (center crop margin, 0=full frame).
+**Env:** `CALIBRATION_CAMERA=0` oder `1` für Kamera-Index.

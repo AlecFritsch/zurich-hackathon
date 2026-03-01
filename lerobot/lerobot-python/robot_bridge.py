@@ -11,6 +11,7 @@ Oder mit uvicorn:
 
 from contextlib import asynccontextmanager
 from pathlib import Path
+import sys
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
@@ -25,7 +26,7 @@ except ImportError:
 
 # Pfad zur Kalibrierung — anpassen!
 CALIBRATION_DIR = Path(__file__).resolve().parent / "calibration"
-ROBOT_PORT = "/dev/ttyACM0"  # oder COM3 auf Windows
+ROBOT_PORT = "COM9" if sys.platform == "win32" else "/dev/ttyACM0"
 
 _controller = None
 

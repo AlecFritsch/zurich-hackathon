@@ -153,6 +153,9 @@ def parse_document_full(file_path: str | Path) -> ParsedDocument:
     file_path = Path(file_path)
     start = time.time()
 
+    if file_path.suffix.lower() in (".md", ".markdown"):
+        return _parse_markdown_direct(file_path, start)
+
     converter = _get_converter()
     result = converter.convert(str(file_path))
     doc = result.document
@@ -202,5 +205,26 @@ def parse_document_full(file_path: str | Path) -> ParsedDocument:
         markdown=markdown,
         raw_dict=raw_dict,
         tables_data=tables_data,
+        parse_time_ms=round(elapsed, 1),
+    )
+
+
+def _parse_markdown_direct(file_path: Path, start_time: float) -> ParsedDocument:
+    """Parse .md files directly without Docling."""
+    markdown = file_path.read_text(encoding="utf-8", errors="replace")
+    sections = []
+    for line in markdown.split("\n"):
+        if line.startswith("#"):
+            title = line.lstrip("#").strip()
+            if title:
+                sections.append(title)
+    elapsed = (time.time() - start_time) * 1000
+    return ParsedDocument(
+        filename=file_path.name,
+        format="MD",
+        pages=1,
+        tables_found=0,
+        sections=sections,
+        markdown=markdown,
         parse_time_ms=round(elapsed, 1),
     )

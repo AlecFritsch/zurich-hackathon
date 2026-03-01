@@ -1,4 +1,4 @@
-"""Lerobot Remote Adapter — ruft Robot Bridge auf dem Lerobot-Laptop per HTTP auf."""
+"""Lerobot Remote Adapter — ruft Robot Bridge (WSL) per HTTP auf."""
 
 from __future__ import annotations
 
@@ -16,9 +16,9 @@ MM_TO_M = 0.001
 
 
 class LerobotRemoteAdapter(RobotAdapter):
-    """Steuert Lerobot SO101 über HTTP-Bridge auf anderem Laptop."""
+    """Steuert Lerobot SO101 über HTTP-Bridge (localhost:9000 in WSL)."""
 
-    def __init__(self, base_url: str = "http://192.168.1.10:9000", timeout: float = 10.0):
+    def __init__(self, base_url: str = "http://localhost:9000", timeout: float = 10.0):
         self._base = base_url.rstrip("/")
         self._timeout = timeout
 
