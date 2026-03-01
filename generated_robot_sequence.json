@@ -1,0 +1,100 @@
+[
+  {
+    "PHASE": 1,
+    "PART_ID": "SY3300-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 2,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 3,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 4,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 5,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 6,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 7,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 8,
+    "PART_ID": "SY3200-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 9,
+    "PART_ID": "SY3401K-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 10,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 11,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 12,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 13,
+    "PART_ID": "SY3401K-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "PHASE": 14,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "TBD",
+    "TOOL": "GRIPPER"
+  }
+]
