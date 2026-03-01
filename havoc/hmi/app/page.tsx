@@ -42,8 +42,9 @@ export default function SetupPage() {
       <div className="flex-1 flex items-center justify-center p-8">
         <div className="text-center">
           <p className="text-sm mb-6" style={{ color: "var(--color-text-muted)" }}>Ready.</p>
-          <div className="flex gap-4 justify-center">
+          <div className="flex gap-4 justify-center flex-wrap">
             <Link href="/inspect"><Button variant="primary" className="px-8 py-3">Inspect</Button></Link>
+            <Link href="/assembly"><Button variant="secondary" className="px-8 py-3">Assembly</Button></Link>
             <label className="cursor-pointer">
               <span className="inline-block px-8 py-3 text-xs uppercase tracking-wider border hover:bg-[var(--color-surface-2)]" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>Upload new</span>
               <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { const f = e.target.files; if (f?.length) processFiles(Array.from(f)); e.target.value = ""; }} />

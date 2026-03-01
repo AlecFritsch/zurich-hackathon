@@ -83,6 +83,9 @@ class AppState:
         self.assembly_sequences: dict[str, list] = {}  # doc_id -> layered sequence
         self.hardware_json: dict[str, Any] = {}  # { parts: [...], tools: [...] }
         self.assembly_plan_json: list[dict] = []  # assembly_plan.json
+        self.assembly_step_index: int = 0
+        self.assembly_status: str = "idle"  # idle|running|handover|complete
+        self.assembly_mismatch: str | None = None  # Notify: Missing/Mismatched
         self.system_status: str = "INITIALIZING"
         self.processing_step: str = ""  # z.B. "Parsing...", "Compiling policy...", "Assembly..."
         self.confidence_threshold: float = settings.confidence_high
@@ -577,6 +580,138 @@ async def verify_components(req: InspectRequest | None = None):
         "missing": result.get("missing", []),
         "message": result.get("message", "Missing components"),
     }
+
+
+# ---------------------------------------------------------------------------
+# Assembly State Machine
+# ---------------------------------------------------------------------------
+
+@app.get("/assembly/status")
+async def assembly_status():
+    """Current assembly state: step index, status, plan, mismatch."""
+    plan = state.assembly_plan_json
+    step = plan[state.assembly_step_index] if plan and 0 <= state.assembly_step_index < len(plan) else None
+    return {
+        "step_index": state.assembly_step_index,
+        "total_steps": len(plan) if plan else 0,
+        "status": state.assembly_status,
+        "current_step": step,
+        "plan": plan,
+        "mismatch": state.assembly_mismatch,
+    }
+
+
+@app.post("/assembly/start")
+async def assembly_start():
+    """Start assembly execution."""
+    if not state.assembly_plan_json:
+        raise HTTPException(400, "No assembly plan — upload PDF first")
+    state.assembly_step_index = 0
+    state.assembly_status = "running"
+    state.assembly_mismatch = None
+    await state.connection_manager.broadcast_event(WSEventType.STATUS, {"assembly": "started", "step": 0})
+    return {"status": "started", "step_index": 0}
+
+
+@app.post("/assembly/execute-step")
+async def assembly_execute_step():
+    """Execute current step: Robot capable? → Robot or Handover."""
+    plan = state.assembly_plan_json
+    if not plan or state.assembly_status not in ("running", "handover"):
+        raise HTTPException(400, "Assembly not running")
+    idx = state.assembly_step_index
+    if idx >= len(plan):
+        state.assembly_status = "complete"
+        return {"status": "complete", "step_index": idx}
+
+    step = plan[idx]
+    action = step.get("ACTION", "")
+    part_id = step.get("PART_ID", "")
+    target = step.get("TARGET_LOCATION", "")
+
+    # Robot capable? Simple heuristic: PICK_AND_PLACE/PLACE + adapter OK
+    robot_ok = False
+    if state.adapter:
+        try:
+            pre = await state.adapter.preflight()
+            robot_ok = pre.get("status") == "OK"
+        except Exception:
+            pass
+
+    if robot_ok and action in ("PICK_AND_PLACE", "PLACE"):
+        try:
+            await state.adapter.pick()
+            await state.adapter.place(target if target else "BIN_A")
+            await state.event_store.emit(FactoryEvent(
+                event_type=EventType.COMMAND_SENT,
+                agent="robot",
+                data={"step": idx, "part_id": part_id, "action": action, "target": target, "executor": "robot"},
+            ))
+            state.assembly_step_index += 1
+            await state.connection_manager.broadcast_event(WSEventType.STATUS, {"assembly": "step_done", "step": state.assembly_step_index})
+            return {"status": "step_done", "executor": "robot", "step_index": state.assembly_step_index}
+        except Exception as e:
+            logger.warning("Robot step failed: %s — handover", e)
+            state.assembly_status = "handover"
+            return {"status": "handover", "reason": str(e), "step": step}
+
+    state.assembly_status = "handover"
+    return {"status": "handover", "step": step, "message": "Robot not capable"}
+
+
+@app.post("/assembly/handover-done")
+async def assembly_handover_done():
+    """Human performed assembly — log step completed."""
+    plan = state.assembly_plan_json
+    if not plan or state.assembly_status != "handover":
+        raise HTTPException(400, "Not in handover")
+    idx = state.assembly_step_index
+    step = plan[idx] if idx < len(plan) else {}
+    await state.event_store.emit(FactoryEvent(
+        event_type=EventType.OPERATOR_OVERRIDE,
+        agent="operator",
+        data={"step": idx, "part_id": step.get("PART_ID"), "action": "human_assembly", "target": step.get("TARGET_LOCATION")},
+    ))
+    state.assembly_step_index += 1
+    state.assembly_status = "running" if state.assembly_step_index < len(plan) else "complete"
+    await state.connection_manager.broadcast_event(WSEventType.STATUS, {"assembly": "step_done", "step": state.assembly_step_index})
+    return {"status": "step_done", "executor": "human", "step_index": state.assembly_step_index}
+
+
+@app.post("/assembly/check-placement")
+async def assembly_check_placement(req: InspectRequest | None = None):
+    """Vision Check: Placement/Orientation vs plan. Matches? → Complete. No? → Notify."""
+    plan = state.assembly_plan_json
+    if not plan or state.assembly_step_index >= len(plan):
+        return {"matches": True, "message": "No step to check"}
+
+    image = None
+    if req and req.image_base64:
+        import base64
+        from io import BytesIO
+        from PIL import Image as PILImage
+        img_bytes = base64.b64decode(req.image_base64)
+        image = PILImage.open(BytesIO(img_bytes))
+    elif state.camera and state.camera.is_open():
+        image = state.camera.capture()
+    if image is None:
+        return {"matches": False, "message": "No camera", "mismatch": True}
+
+    step = plan[state.assembly_step_index - 1] if state.assembly_step_index > 0 else plan[0]
+    from tools.vision_tools import check_placement_vs_plan
+    result = await asyncio.to_thread(
+        check_placement_vs_plan,
+        image,
+        step,
+        step.get("PART_ID", ""),
+        step.get("TARGET_LOCATION", ""),
+    )
+    if not result.get("matches", True):
+        state.assembly_mismatch = result.get("message", "Missing/Mismatched parts")
+        await state.connection_manager.broadcast_event(WSEventType.STATUS, {"assembly": "mismatch", "message": state.assembly_mismatch})
+        return {"matches": False, "message": state.assembly_mismatch, "mismatch": True}
+    state.assembly_mismatch = None
+    return {"matches": True, "message": "OK", "mismatch": False}
 
 
 @app.post("/inspect")

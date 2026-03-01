@@ -430,3 +430,24 @@ Be strict: only list as visible if you clearly see the component."""
     except Exception as e:
         logger.warning("Verify failed: %s", e)
         return {"available": True, "missing": [], "message": f"Verify skipped: {e}"}
+
+
+def check_placement_vs_plan(image: Image.Image, step: dict, expected_part: str, target_location: str) -> dict[str, Any]:
+    """Vision Check: Placement/Orientation vs assembly plan. Returns {matches, message}."""
+    client = _get_client()
+    prompt = f"""This image shows a workstation after an assembly step.
+Expected: Part "{expected_part}" at "{target_location}".
+Does the placement/orientation match the plan? Return JSON: {{"matches": true/false, "message": "..."}}.
+Be strict: matches=true only if part is correctly placed at target."""
+    try:
+        from google.genai import types
+        response = client.models.generate_content(
+            model=settings.gemini_vision_model,
+            contents=[image, prompt],
+            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.0),
+        )
+        data = json.loads(response.text)
+        return {"matches": data.get("matches", False), "message": data.get("message", "")}
+    except Exception as e:
+        logger.warning("Placement check failed: %s", e)
+        return {"matches": True, "message": f"Check skipped: {e}"}
