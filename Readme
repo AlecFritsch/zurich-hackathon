@@ -1,2 +1,139 @@
+Here’s a **cleaner, clearer, and more structured version** of your workflow. I’ve rewritten it to improve readability, logical flow, and technical clarity.
+
+---
+
+# AI-Assisted Assembly System – Structured Workflow
+
+## 1. Task Definition & Prompt Generation
+
+1. A **human expert** explains how the assembly is performed according to the manual.
+2. The **AI generates an initial prompt** based on the expert’s explanation.
+3. The human expert can:
+
+   * Edit the prompt
+   * Approve the final version
+4. The AI generates **structured assembly steps** using parsed data from Docling.
+5. If the output is incorrect:
+
+   * The human expert modifies the prompt
+   * The AI regenerates the steps
+
+This creates a **human-in-the-loop refinement cycle**.
+
+---
+
+## 2. Assembly Data Extraction
+
+1. **Docling** parses the assembly PDF manual and converts it into structured markdown.
+
+2. **Gemini** processes:
+
+   * The markdown output from Docling
+   * The original PDF (if needed)
+
+3. Gemini generates two JSON files:
+
+   ### a) Hardware List (hardware.json)
+
+   * All required components
+   * Quantities
+   * Identifiers
+   * Optional metadata (dimensions, type, etc.)
+
+   ### b) Assembly Plan (assembly_plan.json)
+
+   * Ordered step sequence
+   * Required components per step
+   * Required tools
+   * Robot vs. human responsibility flag
+
+---
+
+## 3. Assembly & Inspection Workflow
+
+### Step 1 – Component Verification (Vision System)
+
+* The vision system checks whether **all required components** from `hardware.json` are present on the table.
+* If something is missing:
+
+  * The system notifies the user.
+* If all components are available:
+
+  * The system proceeds to execution.
+
+---
+
+### Step 2 – Robotic Execution (State Machine)
+
+A **state machine** runs based on `assembly_plan.json`.
+
+For each assembly step:
+
+1. The system identifies which component must be picked.
+2. The vision system provides the component’s position.
+3. The robot:
+
+   * Picks the component
+   * Determines capability:
+
+     * ✅ If capable → performs mounting
+     * ❌ If not capable → hands over part to human
+
+---
+
+### Step 3 – Human Collaboration
+
+If a step requires human involvement:
+
+* The robot hands over the part.
+* The human performs the assembly.
+* The system logs the step as completed.
+
+---
+
+### Step 4 – Quality Inspection (On-Demand)
+
+At any time, the human can trigger **Quality Inspection**.
+
+The system will:
+
+1. Check whether installed parts match the hardware list.
+2. Verify:
+
+   * Correct component placement
+   * Correct position
+   * Correct orientation
+3. Compare installed hardware against expected hardware from the JSON plan.
+4. Notify the user of:
+
+   * Missing parts
+   * Incorrect placement
+   * Mismatched components
+
+---
+
+# System Architecture Overview (High-Level)
+
+**Input:**
+
+* PDF Assembly Manual
+
+**Processing:**
+
+* Docling → Markdown
+* Gemini → Structured JSON
+
+**Execution:**
+
+* Vision system → Component detection & localization
+* Robot controller → State machine execution
+* Human-in-the-loop interaction
+
+**Output:**
+
+* Completed assembly
+* Inspection validation report
+
+
 pip install opencv-python pillow google-genai pydantic spicy
 
