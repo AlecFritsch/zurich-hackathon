@@ -1,0 +1,14 @@
+[project]
+name = "lerobot-python"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "ffmpeg>=1.4",
+    "lerobot>=0.4.4",
+    "placo>=0.9.20",
+    "fastapi",
+    "uvicorn[standard]",
+    "feetech-servo-sdk",
+]
