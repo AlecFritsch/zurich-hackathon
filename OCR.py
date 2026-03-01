@@ -62,7 +62,7 @@ while True:
         
         try:
             response = client.models.generate_content(
-                model='gemini-2.5-flash', # Or gemini-1.5-flash depending on your tier availability
+                model='gemini-2.5-pro', # Or gemini-1.5-flash depending on your tier availability
                 contents=[pil_image, prompt],
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
