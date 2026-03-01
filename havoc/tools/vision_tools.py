@@ -398,3 +398,35 @@ async def run_ocr(camera: "Camera", prompt: str | None = None) -> dict[str, Any]
     except Exception as e:
         logger.error("OCR failed: %s", e)
         return {"parts": [], "error": str(e)}
+
+
+def verify_components_visible(image: Image.Image, expected_parts: list[str]) -> dict[str, Any]:
+    """Component Verification — check if expected parts are visible in image. Returns {available, missing, message}."""
+    if not expected_parts:
+        return {"available": True, "missing": [], "message": "No parts to verify"}
+    client = _get_client()
+    parts_str = ", ".join(expected_parts)
+    prompt = f"""Look at this factory/workstation image. Expected components: [{parts_str}].
+List which of these are VISIBLE in the image. Return JSON: {{"visible": ["part1", "part2"], "missing": ["part3"]}}.
+Be strict: only list as visible if you clearly see the component."""
+    try:
+        from google.genai import types
+        response = client.models.generate_content(
+            model=settings.gemini_vision_model,
+            contents=[image, prompt],
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+                temperature=0.0,
+            ),
+        )
+        data = json.loads(response.text)
+        visible = set(data.get("visible", []))
+        missing = [p for p in expected_parts if p not in visible]
+        return {
+            "available": len(missing) == 0,
+            "missing": missing,
+            "message": "All components available" if not missing else f"Missing: {', '.join(missing)}",
+        }
+    except Exception as e:
+        logger.warning("Verify failed: %s", e)
+        return {"available": True, "missing": [], "message": f"Verify skipped: {e}"}

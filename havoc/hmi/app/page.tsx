@@ -1,232 +1,120 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { HavocWebSocket } from "./lib/websocket";
-import { ExecutablePolicy, InspectionResult, WSEvent } from "./lib/types";
-import StatusBar from "./components/StatusBar";
-import CameraFeed from "./components/CameraFeed";
-import FactoryFloor from "./components/FactoryFloor";
-import EventLog from "./components/EventLog";
-import PolicyPanel from "./components/PolicyPanel";
-import OperatorQA from "./components/OperatorQA";
-import DoclingTraceView from "./components/DoclingTraceView";
+import { useCallback, useState } from "react";
+import Link from "next/link";
+import { useHavoc } from "./context/HavocContext";
+import Button from "./components/ui/Button";
 
-const API = "http://localhost:8000";
+const ACCEPT = ".pdf,.docx,.pptx,.png,.jpg,.jpeg,.tiff,.md";
 
-export default function Dashboard() {
-  const [status, setStatus] = useState("READY");
-  const [policy, setPolicy] = useState<ExecutablePolicy | null>(null);
-  const [assemblySequence, setAssemblySequence] = useState<Array<{ PHASE: number; PART_ID: string; ACTION: string; TARGET_LOCATION: string; TOOL: string }> | null>(null);
-  const [assemblyError, setAssemblyError] = useState<string | null>(null);
-  const [events, setEvents] = useState<InspectionResult[]>([]);
-  const [lastResult, setLastResult] = useState<InspectionResult | null>(null);
-  const [isInspecting, setIsInspecting] = useState(false);
-  const [selectedEvent, setSelectedEvent] = useState<InspectionResult | null>(null);
-  const [lastAnimation, setLastAnimation] = useState<{ target?: string; part_color?: string } | null>(null);
-  const [bins, setBins] = useState([
-    { id: "BIN_A", count: 0, color: "#FF3333" },
-    { id: "BIN_B", count: 0, color: "#3388FF" },
-    { id: "BIN_C", count: 0, color: "#00FF66" },
-    { id: "REJECT_BIN", count: 0, color: "#FF3333" },
-  ]);
-  const [stats, setStats] = useState({ total: 0, passRate: 0, avgConf: 0 });
+export default function SetupPage() {
+  const { policy, uploadError, processingStep, handleUpload, handleApprove, handleReject } = useHavoc();
+  const [dragging, setDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  const wsRef = useRef<HavocWebSocket | null>(null);
-
-  useEffect(() => {
-    const ws = new HavocWebSocket();
-    wsRef.current = ws;
-    ws.connect();
-
-    const unsub = ws.onEvent((event: WSEvent) => {
-      if (event.type === "inspection") {
-        const result = event.data as unknown as InspectionResult;
-        setLastResult(result);
-        setEvents((prev) => [result, ...prev].slice(0, 200));
-        setStatus("RUNNING");
-
-        setBins((prev) =>
-          prev.map((b) =>
-            b.id === result.decision.target_bin ? { ...b, count: b.count + 1 } : b
-          )
-        );
-        setStats((prev) => {
-          const total = prev.total + 1;
-          const rejected = result.decision.action === "REJECT" ? 1 : 0;
-          const passed = total - rejected;
-          return {
-            total,
-            passRate: passed / total,
-            avgConf: (prev.avgConf * prev.total + result.classification.confidence) / total,
-          };
-        });
-
-        setLastAnimation({
-          target: result.decision.target_bin,
-          part_color: result.classification.color_hex,
-        });
-      }
-
-      if (event.type === "policy_update") {
-        const data = event.data as { policy?: ExecutablePolicy };
-        if (data.policy) setPolicy(data.policy);
-      }
-
-      if (event.type === "factory_floor") {
-        const data = event.data as { target?: string; part_color?: string };
-        setLastAnimation(data);
-      }
-    });
-
-    fetch(`${API}/policies/active`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((p) => {
-        if (p) setPolicy(p);
-      })
-      .catch(() => {});
-
-    return () => {
-      unsub();
-      ws.disconnect();
-    };
+  const onFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files;
+    if (f?.length) setSelectedFiles(Array.from(f).filter((x) => x.name && x.size > 0));
   }, []);
 
-  const [uploadError, setUploadError] = useState<string | null>(null);
-  const [processingStep, setProcessingStep] = useState<string>("");
-
-  const handleUpload = useCallback(async (file: File) => {
-    setUploadError(null);
-    setAssemblyError(null);
-    setProcessingStep("Starting...");
-    const form = new FormData();
-    form.append("file", file);
-
-    try {
-      const res = await fetch(`${API}/documents/upload`, { method: "POST", body: form });
-      if (!res.ok) {
-        const err = await res.text();
-        setUploadError(err || `Upload fehlgeschlagen (${res.status})`);
-        return;
-      }
-      const doc = await res.json();
-      if (doc.policy) setPolicy(doc.policy);
-      setAssemblySequence(doc.assembly_sequence?.length ? doc.assembly_sequence : null);
-      setAssemblyError(doc.assembly_error || null);
-      setProcessingStep("");
-    } catch (e) {
-      setUploadError(String(e));
-      setProcessingStep("");
+  const processFiles = useCallback(async (files: File[]) => {
+    if (files.length === 0) return;
+    setUploading(true);
+    for (const file of files) {
+      await handleUpload(file);
     }
+    setUploading(false);
+  }, [handleUpload]);
+
+  const onUpload = useCallback(() => {
+    if (selectedFiles.length === 0) return;
+    processFiles(selectedFiles);
+    setSelectedFiles([]);
+  }, [selectedFiles, processFiles]);
+
+  const onDrop = useCallback((files: FileList | File[]) => {
+    setSelectedFiles(Array.from(files).filter((f) => f.name && f.size > 0));
   }, []);
 
-  const handleApprove = useCallback(async (policyId: string) => {
-    try {
-      await fetch(`${API}/policies/${policyId}/approve`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ operator_id: "operator-1" }),
-      });
-      setPolicy((prev) => (prev ? { ...prev, status: "APPROVED" } : prev));
-      setStatus("RUNNING");
-    } catch (e) {
-      console.error("Approve failed:", e);
-    }
-  }, []);
-
-  const handleReject = useCallback(async (policyId: string) => {
-    try {
-      await fetch(`${API}/policies/${policyId}/reject`, { method: "POST" });
-      setPolicy((prev) => (prev ? { ...prev, status: "REJECTED" } : prev));
-    } catch (e) {
-      console.error("Reject failed:", e);
-    }
-  }, []);
-
-  const handleInspect = useCallback(async () => {
-    setIsInspecting(true);
-    try {
-      const res = await fetch(`${API}/inspect`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ use_camera: true }),
-      });
-      if (!res.ok) {
-        console.error("Inspect failed:", await res.text());
-      }
-    } catch (e) {
-      console.error("Inspect failed:", e);
-    }
-    setIsInspecting(false);
-  }, []);
-
-  const handleQA = useCallback(async (question: string): Promise<string> => {
-    const res = await fetch(`${API}/qa`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-    const data = await res.json();
-    return data.answer || "No answer";
-  }, []);
-
-  const handleStop = useCallback(() => {
-    setStatus("STOPPED");
-  }, []);
-
-  const policyActive = policy?.status === "APPROVED";
-
-  return (
-    <div className="h-screen flex flex-col" style={{ background: "var(--color-bg)" }}>
-      <StatusBar
-        status={status}
-        policyName={
-          policy ? `${policy.source_documents?.[0]?.document_name || policy.policy_id}` : null
-        }
-        onStop={handleStop}
-      />
-
-      <div className="flex-1 flex overflow-hidden">
-        <div
-          className="w-[320px] border-r flex flex-col overflow-y-auto shrink-0"
-          style={{ borderColor: "var(--color-border)" }}
-        >
-          <PolicyPanel
-            policy={policy}
-            assemblySequence={assemblySequence}
-            assemblyError={assemblyError}
-            uploadError={uploadError}
-            processingStep={processingStep}
-            onUpload={handleUpload}
-            onApprove={handleApprove}
-            onReject={handleReject}
-          />
-          <div className="p-4">
-            <CameraFeed
-              lastResult={lastResult}
-              onInspect={handleInspect}
-              isInspecting={isInspecting}
-              policyActive={policyActive}
-            />
+  if (policy?.status === "APPROVED") {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm mb-6" style={{ color: "var(--color-text-muted)" }}>Ready.</p>
+          <div className="flex gap-4 justify-center">
+            <Link href="/inspect"><Button variant="primary" className="px-8 py-3">Inspect</Button></Link>
+            <label className="cursor-pointer">
+              <span className="inline-block px-8 py-3 text-xs uppercase tracking-wider border hover:bg-[var(--color-surface-2)]" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>Upload new</span>
+              <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { const f = e.target.files; if (f?.length) processFiles(Array.from(f)); e.target.value = ""; }} />
+            </label>
           </div>
-        </div>
-
-        <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-          <div className="p-4 border-b" style={{ borderColor: "var(--color-border)" }}>
-            <FactoryFloor
-              bins={bins}
-              totalInspected={stats.total}
-              passRate={stats.passRate}
-              avgConfidence={stats.avgConf}
-              lastAnimation={lastAnimation}
-            />
-          </div>
-
-          <EventLog events={events} onSelectEvent={setSelectedEvent} />
-          <OperatorQA onAsk={handleQA} />
+          {uploadError && <p className="mt-4 text-sm" style={{ color: "var(--color-accent-red)" }}>{uploadError}</p>}
         </div>
       </div>
+    );
+  }
 
-      <DoclingTraceView event={selectedEvent} onClose={() => setSelectedEvent(null)} />
+  if (policy?.status === "REJECTED") {
+    return (
+      <div className="flex-1 flex items-center justify-center p-8">
+        <div className="text-center">
+          <p className="text-sm mb-6" style={{ color: "var(--color-text-muted)" }}>Rejected.</p>
+          <label className="cursor-pointer">
+            <Button variant="primary" className="px-8 py-3">Upload</Button>
+            <input type="file" className="hidden" multiple accept={ACCEPT} onChange={(e) => { const f = e.target.files; if (f?.length) processFiles(Array.from(f)); e.target.value = ""; }} />
+          </label>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 flex items-center justify-center p-8">
+      <div className="w-full max-w-sm">
+        {policy?.status === "DRAFT" ? (
+          <div className="space-y-6">
+            <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>{policy.source_documents?.[0]?.document_name || "Document"} · {policy.decision_rules.length} rules</p>
+            <div className="flex gap-4">
+              <Button onClick={() => handleApprove(policy.policy_id)} variant="primary" className="flex-1 py-3">Approve</Button>
+              <Button onClick={() => handleReject(policy.policy_id)} variant="danger" className="flex-1 py-3">Reject</Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <label className="block cursor-pointer">
+              <div
+                className="border-2 border-dashed p-8 text-center transition-colors"
+                style={{
+                  borderColor: dragging ? "var(--color-accent-green)" : "var(--color-border)",
+                  background: dragging ? "rgba(0,255,102,0.04)" : "transparent",
+                }}
+                onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                onDragLeave={() => setDragging(false)}
+                onDrop={(e) => { e.preventDefault(); setDragging(false); if (e.dataTransfer.files.length) onDrop(e.dataTransfer.files); }}
+              >
+                <p className="text-sm">Drop or click to select</p>
+                <p className="text-[11px] mt-1" style={{ color: "var(--color-text-muted)" }}>PDF, DOCX, PNG, JPG</p>
+              </div>
+              <input type="file" className="hidden" multiple accept={ACCEPT} onChange={onFileSelect} />
+            </label>
+            {selectedFiles.length > 0 && (
+              <div className="space-y-2">
+                <div className="text-[11px]" style={{ color: "var(--color-text-muted)" }}>{selectedFiles.length} file(s)</div>
+                <ul className="text-xs space-y-1 max-h-20 overflow-y-auto">
+                  {selectedFiles.map((f, i) => (
+                    <li key={i} className="truncate" style={{ color: "var(--color-text)" }}>{f.name}</li>
+                  ))}
+                </ul>
+                <Button onClick={onUpload} disabled={uploading} variant="primary" className="w-full py-2">
+                  {uploading ? processingStep || "Processing…" : "Upload"}
+                </Button>
+              </div>
+            )}
+          </div>
+        )}
+        {uploadError && <p className="mt-4 text-sm text-center" style={{ color: "var(--color-accent-red)" }}>{uploadError}</p>}
+      </div>
     </div>
   );
 }

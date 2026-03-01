@@ -20,6 +20,8 @@ Document Execution Engine für Fabrik-Robotik. Dokumente werden geparst, in ausf
 
 Oder manuell: `havoc/README.md` für Backend + HMI, `scripts/README.md` für Kalibrierung.
 
+**Production:** `ENV=production`, `CORS_ORIGINS` und `NEXT_PUBLIC_HAVOC_URL` setzen — siehe `havoc/README.md`.
+
 ## Abhängigkeiten
 
 | Komponente | Install |

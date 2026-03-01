@@ -3,6 +3,9 @@ from pathlib import Path
 
 
 class Settings(BaseSettings):
+    # Environment
+    env: str = "development"  # development | production
+
     google_api_key: str = ""
     gemini_model: str = "gemini-3.1-pro-preview"
     gemini_orchestrator_model: str = "gemini-robotics-er-1.5-preview"  # Robotics-ER: embodied reasoning, function calling
@@ -32,6 +35,10 @@ class Settings(BaseSettings):
 
     max_speed_pct: int = 100
     backend_port: int = 8000
+    backend_host: str = "0.0.0.0"  # 0.0.0.0 for prod (listen all interfaces)
+
+    # CORS: comma-separated origins, or "*" for dev
+    cors_origins: str = "*"
 
     model_config = {"env_file": ".env", "env_file_encoding": "utf-8"}
 

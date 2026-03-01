@@ -148,3 +148,10 @@ class EventStore:
 
     async def get_recent(self, limit: int = 20) -> list[FactoryEvent]:
         return await self.query(limit=limit)
+
+    async def count_all(self) -> int:
+        """Total events stored in DB (persisted)."""
+        assert self._db is not None
+        cursor = await self._db.execute("SELECT COUNT(*) FROM events")
+        row = await cursor.fetchone()
+        return row[0] if row else 0

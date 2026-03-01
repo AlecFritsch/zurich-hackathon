@@ -72,6 +72,7 @@ class ConnectionManager:
 
 class AppState:
     def __init__(self):
+        self.run_id: str = str(uuid.uuid4())[:8].upper()  # Unique per backend start — each run is new
         self.event_store = None
         self.policy_store = None
         self.adapter = None
@@ -80,6 +81,8 @@ class AppState:
         self.part_counter: int = 0
         self.parsed_documents: dict[str, Any] = {}
         self.assembly_sequences: dict[str, list] = {}  # doc_id -> layered sequence
+        self.hardware_json: dict[str, Any] = {}  # { parts: [...], tools: [...] }
+        self.assembly_plan_json: list[dict] = []  # assembly_plan.json
         self.system_status: str = "INITIALIZING"
         self.processing_step: str = ""  # z.B. "Parsing...", "Compiling policy...", "Assembly..."
         self.confidence_threshold: float = settings.confidence_high
@@ -161,9 +164,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="Havoc — Document Execution Engine", lifespan=lifespan)
 
+_cors_origins = ["*"] if settings.cors_origins == "*" else [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -175,7 +179,8 @@ from starlette.requests import Request
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error("Unhandled error on %s %s: %s", request.method, request.url.path, exc, exc_info=True)
-    return JSONResponse(status_code=500, content={"detail": str(exc)})
+    detail = str(exc) if settings.env == "development" else "Internal server error"
+    return JSONResponse(status_code=500, content={"detail": detail})
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +296,11 @@ async def upload_document(file: UploadFile = File(...)):
                 assembly_sequence = None
             elif isinstance(assembly_sequence, list) and assembly_sequence:
                 state.assembly_sequences[doc_id] = assembly_sequence
-                logger.info("Assembly sequence: %d steps", len(assembly_sequence))
+                state.assembly_plan_json = assembly_sequence
+                parts = list({s.get("PART_ID") for s in assembly_sequence if s.get("PART_ID")})
+                tools = list({s.get("TOOL") for s in assembly_sequence if s.get("TOOL")})
+                state.hardware_json = {"parts": parts, "tools": tools}
+                logger.info("Assembly sequence: %d steps, hardware: %d parts, %d tools", len(assembly_sequence), len(parts), len(tools))
             else:
                 if isinstance(assembly_sequence, list) and not assembly_sequence:
                     assembly_error = "Keine Assembly-Schritte aus Dokument extrahiert"
@@ -498,6 +507,11 @@ async def approve_policy(policy_id: str, req: PolicyApprovalRequest):
     if not policy:
         raise HTTPException(404, "Policy not found")
 
+    # New run = new session (each approval starts a fresh run)
+    state.run_id = str(uuid.uuid4())[:8].upper()
+    state.system_status = "RUNNING"
+    state.part_counter = 0
+
     await state.event_store.emit(FactoryEvent(
         event_type=EventType.POLICY_APPROVED,
         agent="operator",
@@ -506,9 +520,9 @@ async def approve_policy(policy_id: str, req: PolicyApprovalRequest):
 
     await state.connection_manager.broadcast_event(
         WSEventType.POLICY_UPDATE,
-        {"policy": policy.model_dump(mode="json"), "action": "approved"},
+        {"policy": policy.model_dump(mode="json"), "action": "approved", "run_id": state.run_id},
     )
-    return {"status": "approved", "policy_id": policy_id}
+    return {"status": "approved", "policy_id": policy_id, "run_id": state.run_id}
 
 
 @app.post("/policies/{policy_id}/reject")
@@ -522,6 +536,48 @@ async def reject_policy(policy_id: str):
 # ---------------------------------------------------------------------------
 # Inspection Pipeline (direct — no supervisor)
 # ---------------------------------------------------------------------------
+
+@app.get("/hardware")
+async def get_hardware():
+    """hardware.json — parts and tools from assembly plan."""
+    return state.hardware_json if state.hardware_json else {"parts": [], "tools": []}
+
+
+@app.get("/assembly-plan")
+async def get_assembly_plan():
+    """assembly_plan.json — layered assembly sequence."""
+    return state.assembly_plan_json
+
+
+@app.post("/verify")
+async def verify_components(req: InspectRequest | None = None):
+    """Component Verification — camera + vision vs hardware.json. Missing → notify."""
+    image = None
+    if req and req.image_base64:
+        import base64
+        from io import BytesIO
+        from PIL import Image as PILImage
+        img_bytes = base64.b64decode(req.image_base64)
+        image = PILImage.open(BytesIO(img_bytes))
+    elif state.camera and state.camera.is_open():
+        image = state.camera.capture()
+    if image is None:
+        return {"available": False, "missing": [], "message": "No camera — cannot verify"}
+
+    parts = state.hardware_json.get("parts", [])
+    if not parts:
+        return {"available": True, "missing": [], "message": "No hardware list — skip verify"}
+
+    from tools.vision_tools import verify_components_visible
+    result = await asyncio.to_thread(verify_components_visible, image, parts)
+    if result.get("available"):
+        return {"available": True, "missing": [], "message": "All components available"}
+    return {
+        "available": False,
+        "missing": result.get("missing", []),
+        "message": result.get("message", "Missing components"),
+    }
+
 
 @app.post("/inspect")
 async def inspect_part(req: InspectRequest | None = None):
@@ -561,6 +617,7 @@ async def inspect_part(req: InspectRequest | None = None):
         data={
             "part_id": part_id,
             "color": result.classification.color,
+            "color_hex": result.classification.color_hex,
             "size_mm": result.classification.size_mm,
             "defect_detected": result.defect_inspection.defect_detected,
             "confidence": confidence,
@@ -583,6 +640,19 @@ async def inspect_part(req: InspectRequest | None = None):
 # ---------------------------------------------------------------------------
 # Operator Controls
 # ---------------------------------------------------------------------------
+
+@app.post("/stop")
+async def stop_run():
+    """Stop robot and set system to STOPPED. Frontend Stop button calls this."""
+    state.system_status = "STOPPED"
+    if state.adapter:
+        try:
+            await state.adapter.stop()
+        except Exception as e:
+            logger.warning("Adapter stop failed: %s", e)
+    await state.connection_manager.broadcast_event(WSEventType.STATUS, {"status": "STOPPED"})
+    return {"status": "stopped"}
+
 
 @app.post("/operator/override")
 async def operator_override(req: OperatorOverrideRequest):
@@ -697,6 +767,50 @@ async def get_events(limit: int = 50):
     return [e.model_dump(mode="json") for e in events]
 
 
+@app.get("/events/inspections")
+async def get_inspection_events(limit: int = 200):
+    """Inspection events in frontend-ready format (InspectionResult). Hydrates UI from DB."""
+    events = await state.event_store.query(event_type=EventType.INSPECTION, limit=limit)
+    out = []
+    for ev in events:
+        d = ev.data
+        color_hex = d.get("color_hex") or _color_to_hex(d.get("color", ""))
+        out.append({
+            "part_id": d.get("part_id", ""),
+            "timestamp": ev.timestamp.isoformat(),
+            "classification": {
+                "color": d.get("color", ""),
+                "color_hex": color_hex,
+                "size_mm": d.get("size_mm", 0),
+                "size_category": "medium",
+                "part_type": "",
+                "shape": "round",
+                "confidence": d.get("confidence", 0),
+            },
+            "defect_inspection": {
+                "defect_detected": d.get("defect_detected", False),
+                "defects": [],
+                "surface_quality": "acceptable",
+                "overall_confidence": d.get("confidence", 0),
+            },
+            "decision": {
+                "part_id": d.get("part_id", ""),
+                "target_bin": d.get("target_bin", ""),
+                "action": d.get("action", ""),
+                "rule_id": d.get("rule_id", ""),
+                "rule_condition": "",
+                "confidence": d.get("confidence", 0),
+                "requires_operator": False,
+            },
+        })
+    return out
+
+
+def _color_to_hex(color: str) -> str:
+    m = {"red": "#FF3333", "blue": "#3388FF", "green": "#00FF66", "yellow": "#FFCC00"}
+    return m.get(color.lower(), "#888888")
+
+
 @app.get("/stats")
 async def get_stats():
     stats = await state.event_store.get_stats()
@@ -712,7 +826,14 @@ async def system_status():
     """Returns system status and current processing step."""
     from tools.vision_tools import load_calibration
     mtx, _ = load_calibration()
+    events_stored = 0
+    if state.event_store:
+        try:
+            events_stored = await state.event_store.count_all()
+        except Exception:
+            pass
     return {
+        "run_id": state.run_id,
         "status": state.system_status,
         "processing_step": state.processing_step,
         "camera": state.camera.is_open() if state.camera else False,
@@ -723,6 +844,7 @@ async def system_status():
         "part_counter": state.part_counter,
         "confidence_threshold": state.confidence_threshold,
         "ws_clients": len(state.connection_manager._connections),
+        "events_stored": events_stored,
     }
 
 

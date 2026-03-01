@@ -16,6 +16,11 @@ cp .env.example .env
 uvicorn main:app --reload --port 8000
 ```
 
+**Production:**
+```bash
+ENV=production CORS_ORIGINS=https://your-frontend.com uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
 ### 2. Frontend
 
 ```bash
@@ -25,6 +30,8 @@ npm run dev
 ```
 
 Open http://localhost:3000
+
+**Production:** Set `NEXT_PUBLIC_HAVOC_URL` to your backend URL (e.g. `https://api.example.com`), then `npm run build && npm start`.
 
 ### 3. Demo Flow
 
