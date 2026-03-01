@@ -1,7 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { InspectionResult } from "../lib/types";
+
+/** Same-origin via Next.js proxy → localhost:8000 */
+const SNAPSHOT_URL = "/api/camera/snapshot";
+const POLL_MS = 250;
 
 interface CameraFeedProps {
   lastResult: InspectionResult | null;
@@ -13,6 +17,48 @@ interface CameraFeedProps {
 export default function CameraFeed({ lastResult, onInspect, isInspecting, policyActive }: CameraFeedProps) {
   const r = lastResult;
   const [streamError, setStreamError] = useState(false);
+  const [frameDataUrl, setFrameDataUrl] = useState<string | null>(null);
+  const errorCountRef = useRef(0);
+  const maxErrors = 10;
+
+  useEffect(() => {
+    let mounted = true;
+    let timer: ReturnType<typeof setTimeout>;
+
+    async function poll() {
+      if (!mounted) return;
+      try {
+        const res = await fetch(SNAPSHOT_URL, { cache: "no-store" });
+        if (!res.ok) throw new Error(`Snapshot ${res.status}`);
+        const data = await res.json();
+        const b64 = data?.image_base64;
+        if (b64) {
+          setFrameDataUrl(`data:image/jpeg;base64,${b64}`);
+          setStreamError(false);
+          errorCountRef.current = 0;
+        } else {
+          throw new Error("No image");
+        }
+      } catch (e) {
+        errorCountRef.current++;
+        if (errorCountRef.current >= maxErrors) {
+          setStreamError(true);
+        }
+      }
+      if (mounted) timer = setTimeout(poll, POLL_MS);
+    }
+
+    poll();
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
+  }, [streamError]); // Re-run when Retry resets streamError
+
+  const handleRetry = () => {
+    errorCountRef.current = 0;
+    setStreamError(false);
+  };
 
   return (
     <div className="flex flex-col">
@@ -24,27 +70,31 @@ export default function CameraFeed({ lastResult, onInspect, isInspecting, policy
         className="relative border overflow-hidden"
         style={{ borderColor: "var(--color-border)", background: "#000", aspectRatio: "4/3", maxHeight: "200px" }}
       >
-        {!streamError ? (
+        {!streamError && frameDataUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
-            src="http://localhost:8000/camera/stream"
+            src={frameDataUrl}
             alt="Live camera feed"
             className="w-full h-full object-cover"
             onError={() => setStreamError(true)}
           />
-        ) : (
+        ) : streamError ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2">
             <span className="text-lg" style={{ color: "var(--color-text-muted)" }}>◉</span>
             <span className="text-[10px] uppercase tracking-widest" style={{ color: "var(--color-text-muted)" }}>
               No Camera
             </span>
             <button
-              onClick={() => setStreamError(false)}
+              onClick={handleRetry}
               className="text-[10px] border px-2 py-0.5 mt-1"
               style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}
             >
               Retry
             </button>
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--color-text-muted)" }}>
+            <span className="text-[10px] uppercase">Connecting…</span>
           </div>
         )}
 

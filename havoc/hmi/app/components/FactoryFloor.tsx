@@ -48,7 +48,7 @@ export default function FactoryFloor({
       </div>
 
       <div className="flex items-stretch gap-2 flex-1 min-h-0">
-        <FlowNode label="CAM" sub="ZED 2i" />
+        <FlowNode label="CAM" sub="USB" />
         <Arrow />
         <FlowNode label="INSPECT" sub="Gemini ER" highlight />
         <Arrow />

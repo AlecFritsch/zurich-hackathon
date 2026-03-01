@@ -57,6 +57,7 @@ class Camera:
 
         self._ws_frame: np.ndarray | None = None
         self._ws_lock = threading.Lock()
+        self._opencv_lock = threading.Lock()
         self._ws_connected = False
         self._ws_task: asyncio.Task | None = None
         self._ws_stop = False
@@ -186,15 +187,35 @@ class Camera:
             return False
 
     def _try_open_opencv(self) -> None:
-        self._cap = cv2.VideoCapture(self._device_id)
-        if self._cap.isOpened():
-            self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
-            self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
-            self._backend = "opencv"
-            logger.info("OpenCV camera opened — device %d", self._device_id)
-        else:
-            self._backend = "none"
-            logger.warning("No camera available")
+        import sys
+        # Windows: CAP_DSHOW first; bei "camera switch failed" CAP_MSMF als Fallback
+        # (DSHOW + MSMF nicht mischen: beide Backends nutzen)
+        apis = [cv2.CAP_DSHOW, cv2.CAP_MSMF] if sys.platform == "win32" else [cv2.CAP_ANY]
+        for api in apis:
+            for idx in [self._device_id, 0, 1, 2]:
+                try:
+                    self._cap = cv2.VideoCapture(idx, api)
+                except Exception as e:
+                    logger.debug("VideoCapture(%d, %s) failed: %s", idx, api, e)
+                    continue
+                if self._cap.isOpened():
+                    try:
+                        self._cap.set(cv2.CAP_PROP_FRAME_WIDTH, self._width)
+                        self._cap.set(cv2.CAP_PROP_FRAME_HEIGHT, self._height)
+                    except Exception:
+                        pass
+                    self._backend = "opencv"
+                    self._device_id = idx
+                    api_name = "DSHOW" if api == cv2.CAP_DSHOW else "MSMF" if api == cv2.CAP_MSMF else str(api)
+                    logger.info("OpenCV camera opened — device %d (api=%s)", idx, api_name)
+                    return
+                try:
+                    self._cap.release()
+                except Exception:
+                    pass
+                self._cap = None
+        self._backend = "none"
+        logger.warning("No camera available — tried devices 0,1,2 with DSHOW and MSMF")
 
     def is_open(self) -> bool:
         if self._backend == "websocket":
@@ -218,14 +239,31 @@ class Camera:
         return None
 
     def _grab_opencv_frame(self) -> Any | None:
+        with self._opencv_lock:
+            return self._grab_opencv_frame_impl()
+
+    def _grab_opencv_frame_impl(self) -> Any | None:
         if not self._cap or not self._cap.isOpened():
             return None
-        ret, frame = self._cap.read()
+        try:
+            ret, frame = self._cap.read()
+        except Exception as e:
+            logger.warning("OpenCV read failed (camera busy? close other apps): %s", e)
+            try:
+                self._cap.release()
+                self._cap = None
+            except Exception:
+                pass
+            self._try_open_opencv()
+            return None
         if not ret or frame is None:
             return None
-        h, w = frame.shape[:2]
-        if w > h * 2.5:
-            frame = frame[:, : w // 2]
+        try:
+            h, w = frame.shape[:2]
+            if w > h * 2.5:
+                frame = frame[:, : w // 2]
+        except Exception:
+            return None
         return frame
 
     def _grab_frame(self) -> Any | None:
@@ -243,28 +281,21 @@ class Camera:
         return Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
 
     def capture_base64(self) -> str | None:
-        frame = self._grab_frame()
-        if frame is None:
-            return None
-        frame = undistort_frame(frame)
-        _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
-        return base64.b64encode(buffer).decode("utf-8")
-
-    def generate_mjpeg(self):
-        """Generator yielding MJPEG frames for streaming."""
-        while self.is_open():
+        try:
             frame = self._grab_frame()
             if frame is None:
-                time.sleep(0.05)
-                continue
-            frame = undistort_frame(frame)
-            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 70])
-            yield (
-                b"--frame\r\n"
-                b"Content-Type: image/jpeg\r\n\r\n" + buffer.tobytes() + b"\r\n"
-            )
-            if self._backend == "websocket":
-                time.sleep(1.0 / max(self._fps, 1))
+                return None
+            try:
+                frame = undistort_frame(frame)
+            except Exception as e:
+                logger.debug("undistort skipped: %s", e)
+            _, buffer = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
+            if buffer is None:
+                return None
+            return base64.b64encode(buffer.tobytes()).decode("utf-8")
+        except Exception as e:
+            logger.warning("capture_base64 failed: %s", e)
+            return None
 
     def release(self) -> None:
         self._ws_stop = True

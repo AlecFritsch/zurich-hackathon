@@ -15,7 +15,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-[var(--font-mono)]">
+      <body className="min-h-screen bg-[var(--color-bg)] text-[var(--color-text)] font-[var(--font-mono)]" suppressHydrationWarning>
         {children}
       </body>
     </html>
