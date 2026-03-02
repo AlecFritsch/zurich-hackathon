@@ -51,6 +51,8 @@ interface HavocState {
   lastAnimation: { target?: string; part_color?: string } | null;
   uploadError: string | null;
   processingStep: string;
+  /** Backend step: parse | compile | assembly | done */
+  processingStepId: string;
   systemStatus: SystemStatus | null;
 }
 
@@ -95,6 +97,7 @@ export function HavocProvider({ children }: { children: ReactNode }) {
   const [stats, setStats] = useState({ total: 0, passRate: 0, avgConf: 0 });
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState("");
+  const [processingStepId, setProcessingStepId] = useState("");
   const [systemStatus, setSystemStatus] = useState<SystemStatus | null>(null);
   const [verification, setVerification] = useState<{ available: boolean; missing: string[]; message: string } | null>(null);
   const wsRef = useRef<HavocWebSocket | null>(null);
@@ -197,8 +200,13 @@ export function HavocProvider({ children }: { children: ReactNode }) {
         }
       }
       if (event.type === "status") {
-        const data = event.data as { status?: string };
+        const data = event.data as { status?: string; message?: string; step?: string };
         if (data?.status === "STOPPED") setStatus("STOPPED");
+        if (data?.message) setProcessingStep(data.message);
+        if (data?.step) {
+          setProcessingStepId(data.step);
+          if (data.step === "done") setProcessingStep("");
+        }
       }
       if (event.type === "factory_floor") {
         const data = event.data as { target?: string; part_color?: string };
@@ -223,6 +231,7 @@ export function HavocProvider({ children }: { children: ReactNode }) {
     setUploadError(null);
     setAssemblyError(null);
     setProcessingStep("Starting...");
+    setProcessingStepId("");
     const form = new FormData();
     form.append("file", file);
     try {
@@ -240,6 +249,7 @@ export function HavocProvider({ children }: { children: ReactNode }) {
       setUploadError(String(e));
     }
     setProcessingStep("");
+    setProcessingStepId("");
   }, []);
 
   const handleApprove = useCallback(async (policyId: string) => {
@@ -355,6 +365,7 @@ export function HavocProvider({ children }: { children: ReactNode }) {
     lastAnimation,
     uploadError,
     processingStep,
+    processingStepId,
     systemStatus,
     setStatus,
     handleUpload,

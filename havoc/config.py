@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.1-pro-preview"
     gemini_orchestrator_model: str = "gemini-robotics-er-1.5-preview"  # Robotics-ER: embodied reasoning, function calling
     gemini_vision_model: str = "gemini-3.1-pro-preview"
+    gemini_assembly_model: str = "gemini-3-flash-preview"  # Assembly sequence
 
     dobot_host: str = "192.168.1.6"
     dobot_port: int = 29999
