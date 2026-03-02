@@ -1,0 +1,114 @@
+[
+  {
+    "STEP": 1,
+    "PHASE": 1,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 1",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 2,
+    "PHASE": 1,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 2",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 3,
+    "PHASE": 1,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 3",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 4,
+    "PHASE": 1,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 4",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 5,
+    "PHASE": 2,
+    "PART_ID": "SY3200-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 5",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 6,
+    "PHASE": 3,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 6",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 7,
+    "PHASE": 4,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 7",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 8,
+    "PHASE": 4,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 8",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 9,
+    "PHASE": 5,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 9",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 10,
+    "PHASE": 5,
+    "PART_ID": "SY3100-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 10",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 11,
+    "PHASE": 6,
+    "PART_ID": "SY3401R-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 11",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 12,
+    "PHASE": 7,
+    "PART_ID": "SY3300-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 12",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 13,
+    "PHASE": 8,
+    "PART_ID": "SY3400-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 13",
+    "TOOL": "GRIPPER"
+  },
+  {
+    "STEP": 14,
+    "PHASE": 9,
+    "PART_ID": "SY3401K-5U1-NA",
+    "ACTION": "PICK_AND_PLACE",
+    "TARGET_LOCATION": "Station 14",
+    "TOOL": "GRIPPER"
+  }
+]

@@ -1,0 +1,27 @@
+[
+  {
+    "PART_ID": "SY3100-5U1-NA",
+    "QUANTITY": 7,
+    "DESCRIPTION": "5/2-Wegeventil, monostabil, 24V DC"
+  },
+  {
+    "PART_ID": "SY3200-5U1-NA",
+    "QUANTITY": 1,
+    "DESCRIPTION": "5/2-Wegeventil, bistabil, 24V DC"
+  },
+  {
+    "PART_ID": "SY3400-5U1-NA",
+    "QUANTITY": 3,
+    "DESCRIPTION": "5/3-Wegeventil, Mittelstellung entlüftet, 24V DC"
+  },
+  {
+    "PART_ID": "SY3401K-5U1-NA",
+    "QUANTITY": 2,
+    "DESCRIPTION": "5/3-Wegeventil, Mittelstellung entlüftet, 24V DC"
+  },
+  {
+    "PART_ID": "SY3300-5U1-NA",
+    "QUANTITY": 1,
+    "DESCRIPTION": "5/3-Wegeventil, Mittelstellung geschlossen, 24V DC"
+  }
+]
